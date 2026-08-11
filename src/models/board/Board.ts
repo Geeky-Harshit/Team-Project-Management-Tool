@@ -36,6 +36,7 @@ const BoardSchema = new Schema<IBoard>(
   },
 );
 
+// Used when fetching active boards for an organization
 BoardSchema.index({
   organizationId: 1,
   archived: 1,

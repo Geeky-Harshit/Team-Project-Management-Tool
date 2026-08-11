@@ -36,6 +36,7 @@ const ListSchema = new Schema<IList>(
   },
 );
 
+// Fetch lists of a board in their display order
 ListSchema.index({
   boardId: 1,
   archived: 1,

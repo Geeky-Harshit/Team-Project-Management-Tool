@@ -52,7 +52,11 @@ const InviteSchema = new Schema<IInvite>(
   },
 );
 
-InviteSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+// Automatically remove expired invites
+InviteSchema.index(
+  { expiresAt: 1 }, 
+  { expireAfterSeconds: 0 },
+);
 
 export default mongoose.models.Invite ||
   mongoose.model<IInvite>("Invite", InviteSchema);

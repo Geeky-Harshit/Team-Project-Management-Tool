@@ -29,6 +29,7 @@ const OrganizationMemberSchema = new Schema<IOrganizationMember>(
   },
 );
 
+// Find all organizations belonging to a user
 OrganizationMemberSchema.index(
   { organizationId: 1, userId: 1 },
   { unique: true },
