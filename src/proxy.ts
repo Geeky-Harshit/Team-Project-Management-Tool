@@ -9,6 +9,18 @@ const PUBLIC_ROUTES = [
   "/sign-up",
 ];
 
+// Slugs that are reserved for application pages and should NOT be treated as organizations
+const RESERVED_SLUGS = [
+  "api",
+  "_next",
+  "favicon.ico",
+  "dashboard",
+  "invite",
+  "sign-in",
+  "sign-up",
+  "404",
+];
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -32,18 +44,13 @@ export async function proxy(request: NextRequest) {
     );
   }
 
-  // Skip org check for routes like "/"
   const segments = pathname.split("/").filter(Boolean);
 
   if (segments.length > 0) {
     const orgSlug = segments[0];
 
-    // Ignore Next.js internals and APIs
-    if (
-      orgSlug !== "api" &&
-      orgSlug !== "_next" &&
-      orgSlug !== "favicon.ico"
-    ) {
+    // Only run organization verification if the slug is NOT in the reserved list
+    if (!RESERVED_SLUGS.includes(orgSlug)) {
       await connectDB();
 
       const organization = await Organization.findOne({
