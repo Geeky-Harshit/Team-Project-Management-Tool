@@ -26,6 +26,7 @@ const OrganizationMemberSchema = new Schema<IOrganizationMember>(
   },
   {
     timestamps: true,
+    collection: "member",
   },
 );
 

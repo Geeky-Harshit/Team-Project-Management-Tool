@@ -29,6 +29,7 @@ const OrganizationSchema = new Schema<IOrganization>(
   },
   {
     timestamps: true,
+    collection: "organization",
   },
 );
 
