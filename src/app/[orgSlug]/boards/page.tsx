@@ -39,7 +39,7 @@ export default async function BoardsPage({ params }: PageProps) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {boards.map((board) => (
-          <Link key={board._id.toString()} href={`/${orgSlug}/board/${board._id.toString()}`}>
+          <Link key={board._id.toString()} href={`/${orgSlug}/boards/${board._id.toString()}`}>
             <Card className="h-32 flex flex-col justify-between p-4 cursor-pointer hover:border-primary transition duration-150 shadow-sm border-gray-200">
               <h3 className="font-semibold text-gray-800 text-base line-clamp-2">{board.name}</h3>
               <span className="text-xs text-gray-400">Created {new Date(board.createdAt).toLocaleDateString()}</span>
