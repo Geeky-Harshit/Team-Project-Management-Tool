@@ -2,20 +2,22 @@ export interface Organization {
   id: string;
   name: string;
   slug: string;
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
+  logo?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
-export type Role = "admin" | "member" | "viewer";
+
+export type Role = "owner" | "admin" | "member" | "viewer";
 
 export interface OrganizationMember {
   id: string;
   organizationId: string;
   userId: string;
   role: Role;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
+
 export interface Invite {
   id: string;
   organizationId: string;
@@ -23,8 +25,8 @@ export interface Invite {
   token: string;
   role: Role;
   invitedBy: string;
-  expiresAt: string;
-  usedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
+  expiresAt: Date;
+  usedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
