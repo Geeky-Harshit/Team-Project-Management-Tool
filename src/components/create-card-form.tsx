@@ -5,21 +5,21 @@ import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createCard } from "@/actions/cards-action";
+import { useOrgs } from "@/hooks/useOrgs";
 
 export default function CreateCardForm({
   listId,
   boardId,
-  orgSlug,
 }: {
   listId: string;
   boardId: string;
-  orgSlug: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [loading, setLoading] = useState(false);
+  const { currentOrg } = useOrgs()
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!title.trim()) return;
     setLoading(true);
@@ -28,7 +28,7 @@ export default function CreateCardForm({
       formData.append("title", title);
       formData.append("listId", listId);
       formData.append("boardId", boardId);
-      formData.append("orgSlug", orgSlug);
+      formData.append("orgId", currentOrg!.id);
       await createCard(formData);
       setTitle("");
       setIsOpen(false);

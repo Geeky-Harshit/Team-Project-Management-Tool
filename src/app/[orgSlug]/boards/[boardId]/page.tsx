@@ -98,14 +98,13 @@ export default async function BoardPage({ params }: PageProps) {
               <CreateCardForm
                 listId={listIdStr}
                 boardId={boardId}
-                orgSlug={orgSlug}
               />
             </div>
           );
         })}
 
         {/* Add List Form Trigger */}
-        <CreateListForm boardId={boardId} orgSlug={orgSlug} />
+        <CreateListForm boardId={boardId} />
       </div>
     </div>
   );

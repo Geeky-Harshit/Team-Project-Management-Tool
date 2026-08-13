@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { createList } from "@/actions/lists-action";
+import { useOrgs } from "@/hooks/useOrgs";
 
 export default function CreateListForm({
   boardId,
-  orgSlug,
 }: {
   boardId: string;
   orgSlug: string;
@@ -17,6 +17,7 @@ export default function CreateListForm({
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+  const {currentOrg}=useOrgs()
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -26,7 +27,7 @@ export default function CreateListForm({
       const formData = new FormData();
       formData.append("name", name);
       formData.append("boardId", boardId);
-      formData.append("orgSlug", orgSlug);
+      formData.append("orgId", currentOrg!.id);
       await createList(formData);
       setName("");
       setIsOpen(false);
