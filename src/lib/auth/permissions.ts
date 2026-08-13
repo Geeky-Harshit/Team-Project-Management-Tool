@@ -1,9 +1,9 @@
 import connectDB from "@/lib/db";
 import OrganizationMember from "@/models/organization/OrganizationMember";
-
-export type Role = "admin" | "member" | "viewer";
+import { Role } from "@/types";
 
 const roleHierarchy: Record<Role, number> = {
+  owner: 4,
   admin: 3,
   member: 2,
   viewer: 1,

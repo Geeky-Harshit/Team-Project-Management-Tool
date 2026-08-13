@@ -15,7 +15,6 @@ export interface OrganizationMember {
   userId: string;
   role: Role;
   createdAt: Date;
-  updatedAt: Date;
 }
 
 export interface Invite {
