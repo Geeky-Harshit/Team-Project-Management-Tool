@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
-import { useRef, useState, useEffect } from "react";
+import { useOrgs } from "@/hooks/useOrgs";
 import { ChevronsDown, ChevronsUp } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
-import { useOrgs } from "@/context/org-context";
 
 export default function OrganizationList() {
   const { orgs, loading, error } = useOrgs();
@@ -34,7 +34,7 @@ export default function OrganizationList() {
   }, []);
 
   return (
-    <Card className="border-gray-200 shadow-md h-[300px] flex flex-col overflow-hidden">
+    <Card className="border-gray-200 shadow-md h-75 flex flex-col overflow-hidden">
       <CardHeader className="pb-2">
         <CardTitle>Your Organizations</CardTitle>
         <CardDescription>Select an organization to manage your boards</CardDescription>

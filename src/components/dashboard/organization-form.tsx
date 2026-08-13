@@ -1,6 +1,6 @@
 "use client";
 
-import { useOrgs } from "@/context/org-context";
+import { useOrgs } from "@/hooks/useOrgs";
 import { authClient } from "@/lib/auth/auth-client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
