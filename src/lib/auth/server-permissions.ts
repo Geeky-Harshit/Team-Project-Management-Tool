@@ -4,14 +4,15 @@ import { Role } from "@/types";
 import connectDB from "@/lib/db";
 import Organization from "@/models/organization/Organization";
 
-export async function validateOrgAccess(orgSlug: string, minRole: Role) {
+export async function validateOrgAccess(orgId: string, minRole: Role) {
   const session = await getSession();
   if (!session) {
     throw new Error("Unauthorized");
   }
 
+  console.log(orgId);
   await connectDB();
-  const org = await Organization.findOne({ slug: orgSlug });
+  const org = await Organization.findOne({ _id:orgId });
   if (!org) {
     throw new Error("Organization not found");
   }
