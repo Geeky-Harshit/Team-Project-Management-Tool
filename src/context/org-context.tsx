@@ -1,22 +1,34 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useState, useEffect, useCallback } from "react";
+import { useParams } from "next/navigation";
 import { authClient } from "@/lib/auth/auth-client";
 import { Organization } from "@/types";
 
 interface OrgContextValue {
   orgs: Organization[];
+  currentOrg: Organization | null;
   loading: boolean;
   error: string;
   refreshOrgs: () => Promise<void>;
 }
 
-const OrgContext = createContext<OrgContextValue | null>(null);
+export const OrgContext = createContext<OrgContextValue | null>(null);
 
-export function OrgProvider({ children, userId }: { children: React.ReactNode; userId: string }) {
+export function OrgProvider({
+  children,
+  userId,
+  initialCurrentOrg = null
+}: {
+  children: React.ReactNode;
+  userId: string;
+  initialCurrentOrg?: Organization | null;
+}) {
   const [orgs, setOrgs] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const params = useParams();
+  const orgSlug = params?.orgSlug as string | undefined;
 
   const refreshOrgs = useCallback(async () => {
     setLoading(true);
@@ -36,21 +48,16 @@ export function OrgProvider({ children, userId }: { children: React.ReactNode; u
 
   useEffect(() => {
     if (userId) {
-      (()=>refreshOrgs())();
+      (() => refreshOrgs())();
     }
   }, [userId, refreshOrgs]);
 
+  // Optimize: Use the server-provided org if client list is still loading
+  const currentOrg = orgs.find((o) => o.slug === orgSlug) || initialCurrentOrg;
+
   return (
-    <OrgContext.Provider value={{ orgs, loading, error, refreshOrgs }}>
+    <OrgContext.Provider value={{ orgs, currentOrg, loading, error, refreshOrgs }}>
       {children}
     </OrgContext.Provider>
   );
-}
-
-export function useOrgs() {
-  const context = useContext(OrgContext);
-  if (!context) {
-    throw new Error("useOrgs must be used within an OrgProvider");
-  }
-  return context;
 }
