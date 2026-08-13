@@ -2,8 +2,8 @@ import mongoose, { Schema } from "mongoose";
 
 interface IOrganizationMember {
   organizationId: mongoose.ObjectId;
-  userId: string;
-  role: "admin" | "member" | "viewer";
+  userId: mongoose.Types.ObjectId;
+  role: "admin" | "member" | "viewer" | "owner";
 }
 
 const OrganizationMemberSchema = new Schema<IOrganizationMember>(
@@ -14,12 +14,13 @@ const OrganizationMemberSchema = new Schema<IOrganizationMember>(
       required: true,
     },
     userId: {
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: "User",
       required: true,
     },
     role: {
       type: String,
-      enum: ["admin", "member", "viewer"],
+      enum: ["admin", "member", "viewer", "owner"],
       default: "member",
       required: true,
     },
@@ -30,7 +31,6 @@ const OrganizationMemberSchema = new Schema<IOrganizationMember>(
   },
 );
 
-// Find all organizations belonging to a user
 OrganizationMemberSchema.index(
   { organizationId: 1, userId: 1 },
   { unique: true },

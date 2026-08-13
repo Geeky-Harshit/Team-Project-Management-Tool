@@ -3,7 +3,7 @@ import mongoose, { Schema } from "mongoose";
 interface IOrganization {
   name: string;
   slug: string;
-  createdBy: string;
+  createdBy?: string;
 }
 
 const OrganizationSchema = new Schema<IOrganization>(
@@ -24,7 +24,6 @@ const OrganizationSchema = new Schema<IOrganization>(
 
     createdBy: {
       type: String,
-      required: true,
     },
   },
   {
