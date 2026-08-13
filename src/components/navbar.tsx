@@ -66,7 +66,7 @@ export default function NavBar() {
                     <Button variant="ghost" className="text-gray-700 hover:text-black">Log In</Button>
                   </Link>
                   <Link href="/sign-up">
-                    <Button className="bg-primary hover:bg-primary/90">Start for free</Button>
+                    <Button className="bg-primary hover:bg-primary/90">Sign Up</Button>
                   </Link>
                 </>
               )
