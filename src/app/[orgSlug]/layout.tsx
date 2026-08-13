@@ -4,6 +4,7 @@ import Organization from "@/models/organization/Organization";
 import OrganizationMember from "@/models/organization/OrganizationMember";
 import { redirect, notFound } from "next/navigation";
 import Sidebar from "@/components/sidebar";
+import { OrgProvider } from "@/context/org-context";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -36,11 +37,22 @@ export default async function OrgLayout({ children, params }: LayoutProps) {
   const isAdmin = membership.role === "admin" || membership.role === "owner";
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] bg-gray-50 overflow-hidden">
-      <Sidebar orgName={org.name} orgSlug={orgSlug} isAdmin={isAdmin} />
-      <main className="flex-1 overflow-y-auto p-8">
-        {children}
-      </main>
-    </div>
+    <OrgProvider
+      userId={session.user.id}
+      initialCurrentOrg={{
+        id: org._id.toString(),
+        name: org.name,
+        slug: org.slug,
+        createdAt: org.createdAt,
+        updatedAt: org.updatedAt,
+      }}
+    >
+      <div className="flex h-[calc(100vh-4rem)] bg-gray-50 overflow-hidden">
+        <Sidebar orgName={org.name} orgSlug={orgSlug} isAdmin={isAdmin} />
+        <main className="flex-1 overflow-y-auto p-8">
+          {children}
+        </main>
+      </div>
+    </OrgProvider>
   );
 }
