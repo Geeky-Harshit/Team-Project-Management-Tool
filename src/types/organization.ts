@@ -29,3 +29,17 @@ export interface Invite {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface MemberUser {
+  id: string;
+  name: string;
+  email: string;
+  image?: string | null;
+}
+
+export interface MemberWithUser {
+  id: string;
+  role: Role;
+  createdAt: string;
+  user: MemberUser;
+}
