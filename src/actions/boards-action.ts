@@ -27,12 +27,11 @@ export async function createBoard(formData: FormData) {
     type: "BOARD_CREATED",
     message: `created board "${name}"`,
   });
-
-  revalidatePath(`/${org.orgSlug}/boards`);
+  revalidatePath(`/${org.slug}/boards`);
 }
 
-export async function renameBoard(boardId: string, orgSlug: string, newName: string) {
-  const { user, org } = await validateOrgAccess(orgSlug, "member");
+export async function renameBoard(boardId: string, orgId: string, newName: string) {
+  const { user, org } = await validateOrgAccess(orgId, "member");
 
   await connectDB();
   const board = await Board.findOneAndUpdate(
@@ -51,11 +50,11 @@ export async function renameBoard(boardId: string, orgSlug: string, newName: str
     message: `renamed board to "${newName}"`,
   });
 
-  revalidatePath(`/${orgSlug}/boards`);
+  revalidatePath(`/${org.slug}/boards`);
 }
 
-export async function archiveBoard(boardId: string, orgSlug: string) {
-  const { user, org } = await validateOrgAccess(orgSlug, "member");
+export async function archiveBoard(boardId: string, orgId: string) {
+  const { user, org } = await validateOrgAccess(orgId, "member");
 
   await connectDB();
   const board = await Board.findOneAndUpdate(
@@ -74,5 +73,5 @@ export async function archiveBoard(boardId: string, orgSlug: string) {
     message: `archived board "${board.name}"`,
   });
 
-  revalidatePath(`/${orgSlug}/boards`);
+  revalidatePath(`/${org.slug}/boards`);
 }
