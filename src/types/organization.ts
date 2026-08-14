@@ -40,6 +40,6 @@ export interface MemberUser {
 export interface MemberWithUser {
   id: string;
   role: Role;
-  createdAt: string;
+  createdAt: Date;
   user: MemberUser;
 }
