@@ -12,7 +12,6 @@ export default function CreateListForm({
   boardId,
 }: {
   boardId: string;
-  orgSlug: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
