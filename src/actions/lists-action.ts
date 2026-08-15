@@ -35,7 +35,7 @@ export async function createList(formData: FormData) {
     message: `created list "${name}" on board "${board.name}"`,
   });
 
-  revalidatePath(`/${org.orgSlug}/boards/${boardId}`);
+  revalidatePath(`/${org.slug}/boards/${boardId}`);
 }
 
 export async function renameList(listId: string, boardId: string, orgId: string, newName: string) {
@@ -59,7 +59,7 @@ export async function renameList(listId: string, boardId: string, orgId: string,
     message: `renamed list to "${newName}" on board "${board.name}"`,
   });
 
-  revalidatePath(`/${org.orgSlug}/boards/${boardId}`);
+  revalidatePath(`/${org.slug}/boards/${boardId}`);
 }
 
 export async function deleteList(listId: string, boardId: string, orgId: string) {
@@ -80,5 +80,5 @@ export async function deleteList(listId: string, boardId: string, orgId: string)
     message: `deleted list "${list.name}" on board "${board.name}"`,
   });
 
-  revalidatePath(`/${org.orgSlug}/boards/${boardId}`);
+  revalidatePath(`/${org.slug}/boards/${boardId}`);
 }

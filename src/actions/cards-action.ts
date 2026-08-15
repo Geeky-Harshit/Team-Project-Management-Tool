@@ -40,7 +40,7 @@ export async function createCard(formData: FormData) {
     message: `created card "${title}"`,
   });
 
-  revalidatePath(`/${org.orgSlug}/boards/${boardId}`);
+  revalidatePath(`/${org.slug}/boards/${boardId}`);
 }
 
 export async function updateCardDetails(
@@ -80,7 +80,7 @@ export async function updateCardDetails(
     message,
   });
 
-  revalidatePath(`/${org.orgSlug}/boards/${boardId}`);
+  revalidatePath(`/${org.slug}/boards/${boardId}`);
 }
 
 export async function addComment(
@@ -107,6 +107,6 @@ export async function addComment(
     message: `added comment on card`,
   });
 
-  revalidatePath(`/${org.orgSlug}/boards/${boardId}`);
+  revalidatePath(`/${org.slug}/boards/${boardId}`);
   return comment;
 }
