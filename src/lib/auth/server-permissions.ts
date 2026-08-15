@@ -10,7 +10,6 @@ export async function validateOrgAccess(orgId: string, minRole: Role) {
     throw new Error("Unauthorized");
   }
 
-  console.log(orgId);
   await connectDB();
   const org = await Organization.findOne({ _id:orgId });
   if (!org) {
