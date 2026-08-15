@@ -16,7 +16,7 @@ export function WorkspaceActivityFeed({ activities }: { activities: Activity[] }
           activities.map((act) => (
             <div key={act.id} className="text-xs border-l-2 border-primary/20 pl-3 py-1 flex flex-col gap-0.5">
               <span className="text-gray-700 font-medium">{act.message}</span>
-              <span className="text-[10px] text-gray-400">
+              <span suppressHydrationWarning={true} className="text-[10px] text-gray-400">
                 {new Date(act.createdAt).toLocaleString("en-IN")}
               </span>
             </div>

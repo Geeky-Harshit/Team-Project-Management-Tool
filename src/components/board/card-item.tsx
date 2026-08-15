@@ -25,7 +25,7 @@ export function CardItem({ card, onClick }: CardItemProps) {
         <div className="flex items-center justify-between mt-1">
           {card.dueDate ? (
             <span
-              suppressHydrationWarning={true} /* 👈 Add this prop */
+              suppressHydrationWarning={true}
               className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border ${isOverdue
                   ? "text-red-600 bg-red-50 border-red-200"
                   : "text-gray-500 bg-gray-50 border-gray-200"

@@ -16,8 +16,8 @@ export function OverdueTasksList({ tasks }: { tasks: Card[] }) {
           tasks.map((task) => (
             <div key={task.id} className="flex justify-between items-center text-xs py-2 border-b last:border-b-0">
               <span className="font-medium text-gray-800">{task.title}</span>
-              <span className="text-red-500 bg-red-50 px-2 py-0.5 rounded font-semibold border border-red-200/50">
-                {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : ""}
+              <span suppressHydrationWarning={true} className="text-red-500 bg-red-50 px-2 py-0.5 rounded font-semibold border border-red-200/50">
+                {task.dueDate ? new Date(task.dueDate).toLocaleDateString("en-IN") : ""}
               </span>
             </div>
           ))

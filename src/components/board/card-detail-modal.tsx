@@ -132,7 +132,7 @@ export function CardDetailModal({
                     <div key={comm.id} className="bg-gray-50 border p-3 rounded-lg flex flex-col gap-1 text-xs font-sans">
                       <div className="flex justify-between items-center text-[10px] text-gray-400 font-semibold">
                         <span>User: {comm.authorId.slice(-4)}</span>
-                        <span>{new Date(comm.createdAt).toLocaleString()}</span>
+                        <span suppressHydrationWarning={true} >{new Date(comm.createdAt).toLocaleString("en-IN")}</span>
                       </div>
                       <p className="text-gray-700 font-medium">{comm.content}</p>
                     </div>
