@@ -58,5 +58,11 @@ InviteSchema.index(
   { expireAfterSeconds: 0 },
 );
 
+// unique constraint for active invites (user should not have more than one active invite)
+InviteSchema.index(
+  { organizationId: 1, email: 1, usedAt: 1 },
+  { unique: true, partialFilterExpression: { usedAt: null } },
+);
+
 export default mongoose.models.Invite ||
   mongoose.model<IInvite>("Invite", InviteSchema);
