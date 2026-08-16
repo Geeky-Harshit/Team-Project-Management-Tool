@@ -6,6 +6,8 @@ import Invite from "@/models/organization/Invite";
 import { Role } from "@/types";
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { sendInviteEmail } from "@/lib/mailer";
+import Organization from "@/models/organization/Organization";
 
 export async function GET(request: NextRequest) {
   try {
@@ -59,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     const token = crypto.randomUUID();
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
+    expiresAt.setDate(expiresAt.getDate() + 1);
 
     const invite = await Invite.create({
       organizationId,
@@ -76,6 +78,20 @@ export async function POST(request: NextRequest) {
       type: "MEMBER_INVITED",
       message: `invited ${email} as ${role || "member"}`,
     });
+
+    const org = await Organization.findById(organizationId).select("name");
+    try {
+      await sendInviteEmail({
+        to: email,
+        orgName: org?.name || "Unknown Organization",
+        role: role || "member",
+        joinUrl: `${request.nextUrl.origin}/invite?token=${token}`,
+        inviterName: session.user.name || session.user.email,
+      });
+    } catch (emailErr) {
+      console.error("Failed to send invite email:", emailErr);
+      // Don't fail the invite — token is still created
+    }
 
     const joinUrl = `${request.nextUrl.origin}/invite?token=${token}`;
     return NextResponse.json({ invite, joinUrl }, { status: 201 });
