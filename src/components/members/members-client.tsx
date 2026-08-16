@@ -20,6 +20,7 @@ export default function MembersClient({
 }: MembersClientProps) {
   const [members, setMembers] = useState<MemberWithUser[]>([]);
   const [invites, setInvites] = useState<Invite[]>([]);
+  const [removingInviteToken, setRemovingInviteToken] = useState<string | null>(null);
 
   const fetchMembers = useCallback(async () => {
     try {
@@ -59,7 +60,7 @@ export default function MembersClient({
 
   useEffect(() => {
     if (orgId) {
-      (()=>Promise.all([fetchMembers(), fetchInvites()]))();
+      (() => Promise.all([fetchMembers(), fetchInvites()]))();
     }
   }, [orgId, fetchMembers, fetchInvites]);
 
@@ -97,6 +98,29 @@ export default function MembersClient({
     }
   };
 
+  const handleRemoveInvite = async (token: string) => {
+    setRemovingInviteToken(token);
+    try {
+      const res = await fetch("/api/invites", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ organizationId: orgId, token }),
+      });
+
+      const data = (await res.json()) as { error?: string; success?: boolean };
+      if (data.error) {
+        console.error(data.error);
+        return;
+      }
+
+      await fetchInvites();
+    } catch (err) {
+      console.error("Failed to remove invite", err);
+    } finally {
+      setRemovingInviteToken(null);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6 max-w-4xl mx-auto p-6 font-sans">
       <div>
@@ -113,7 +137,11 @@ export default function MembersClient({
             onChangeRole={handleChangeRole}
             onRemove={handleRemoveMember}
           />
-          <PendingInvites invites={invites} />
+          <PendingInvites
+            invites={invites}
+            onRemoveInvite={handleRemoveInvite}
+            removingToken={removingInviteToken}
+          />
         </div>
 
         {isAdmin && (
