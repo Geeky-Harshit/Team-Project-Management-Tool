@@ -2,6 +2,7 @@ export type ActivityType =
   | "BOARD_CREATED"
   | "BOARD_RENAMED"
   | "BOARD_ARCHIVED"
+  | "BOARD_RESTORED"
   | "LIST_CREATED"
   | "LIST_RENAMED"
   | "LIST_DELETED"

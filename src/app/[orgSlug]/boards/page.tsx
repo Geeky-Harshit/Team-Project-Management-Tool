@@ -8,6 +8,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import CreateBoardCard from "@/components/create-board-card";
+import { Archive } from "lucide-react";
 
 interface PageProps {
   params: Promise<{ orgSlug: string }>;
@@ -20,7 +21,8 @@ export default async function BoardsPage({ params }: PageProps) {
   const org = await Organization.findOne({ slug: orgSlug });
   if (!org) notFound();
 
-  await validateOrgAccess(org._id.toString(), "viewer");
+  const { role } = await validateOrgAccess(org._id.toString(), "viewer");
+  const canManage = role === "owner" || role === "admin";
 
   const boards = await Board.find({
     organizationId: org._id,
@@ -96,9 +98,21 @@ export default async function BoardsPage({ params }: PageProps) {
 
       <section>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">All Boards</h2>
-          <p className="text-xs text-gray-500">{boards.length} results</p>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">All Boards</h2>
+            <p className="text-xs text-gray-500">{boards.length} results</p>
+          </div>
+          {canManage && (
+            <Link
+              href={`/${orgSlug}/boards/archived`}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50"
+            >
+              <Archive className="h-3.5 w-3.5 text-gray-500" />
+              Archived Boards
+            </Link>
+          )}
         </div>
+
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">          {boards.map((board) => {
           const stats = boardStats.find((s) => s.boardId === board._id.toString());

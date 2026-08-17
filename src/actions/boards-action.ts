@@ -75,3 +75,28 @@ export async function archiveBoard(boardId: string, orgId: string) {
 
   revalidatePath(`/${org.slug}/boards`);
 }
+
+export async function restoreBoard(boardId: string, orgId: string) {
+  // Only admins or owners can restore archived boards
+  const { user, org } = await validateOrgAccess(orgId, "admin");
+
+  await connectDB();
+  const board = await Board.findOneAndUpdate(
+    { _id: boardId, organizationId: org._id },
+    { archived: false },
+    { new: true }
+  );
+
+  if (!board) throw new Error("Board not found");
+
+  await logActivity({
+    organizationId: org._id,
+    boardId: board._id,
+    actorId: user.id,
+    type: "BOARD_RESTORED",
+    message: `restored board "${board.name}"`,
+  });
+
+  revalidatePath(`/${org.slug}/boards`);
+  revalidatePath(`/${org.slug}/boards/archived`);
+}
