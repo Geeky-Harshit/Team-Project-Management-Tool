@@ -1,3 +1,4 @@
+import "dotenv/config";
 import mongoose from "mongoose";
 import { faker } from "@faker-js/faker";
 import Organization from "../models/organization/Organization";
@@ -7,15 +8,14 @@ import List from "../models/board/List";
 import Card from "../models/card/Card";
 import Activity from "../models/activity/Activity";
 import Invite from "../models/organization/Invite";
-import bcrypt from "bcryptjs";
+import { auth } from "@/lib/auth/auth";
 
-const MONGODB_URI = "<MongoDB_URI>"
+const MONGODB_URI = process.env.MONGODB_URI!
 
 interface SeedUser {
   id: string;
   name: string;
   email: string;
-  password:string
 }
 
 async function seed() {
@@ -37,21 +37,39 @@ async function seed() {
   if (!db) throw new Error("DB connection not ready");
   await db.collection("user").deleteMany({});
 
-  const password="12345678"
-  const hashedPassword=await bcrypt.hash(password,10);
+  const DEFAULT_PASSWORD = "Password@123";
 
-  for (let i = 0; i < 12; i++) {
-    const name = faker.person.fullName();
-    const email = faker.internet.email().toLowerCase();
-    const image = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${name}`;
-    
-    const userRes = await db.collection("user").insertOne({
-      name, email, image, emailVerified: true, password:hashedPassword,
-      createdAt: new Date(), updatedAt: new Date(),
-    });
-    users.push({ id: userRes.insertedId.toString(), name, email, password });
+for (let i = 0; i < 12; i++) {
+  const name = faker.person.fullName();
+  const email = faker.internet.email().toLowerCase();
+  const image = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(
+    name
+  )}`;
+
+  await auth.api.signUpEmail({
+    body: {
+      name,
+      email,
+      password: DEFAULT_PASSWORD,
+      image,
+    },
+  });
+
+  const user = await db.collection("user").findOne({ email });
+
+  if (!user) {
+    throw new Error(`Failed to create user ${email}`);
   }
-  console.log(`Created ${users.length} users.`);
+
+  users.push({
+    id: user._id.toString(),
+    name,
+    email,
+  });
+}
+
+console.log(`Created ${users.length} users.`);
+console.log(`Default password: ${DEFAULT_PASSWORD}`);
 
   const orgsData = [
     { name: "Acme Kanban Corp", slug: "acme-kanban" },
@@ -148,7 +166,6 @@ async function seed() {
   });
 
   console.log("Created 2 invite tokens.");
-  console.log(users)
   console.log("Seed complete!");
   process.exit(0);
 }
