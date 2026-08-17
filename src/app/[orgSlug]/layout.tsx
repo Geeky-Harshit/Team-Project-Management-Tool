@@ -45,12 +45,13 @@ export default async function OrgLayout({ children, params }: LayoutProps) {
         updatedAt: org.updatedAt,
       }}
     >
-      <div className="flex h-[calc(100vh-4rem)] bg-gray-50 overflow-hidden">
+      <div className="flex flex-col md:flex-row h-[calc(100vh-4rem)] bg-gray-50 overflow-hidden relative">
         <Sidebar orgName={org.name} orgSlug={orgSlug} />
-        <main className="flex-1 overflow-y-auto p-8">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8">
           {children}
         </main>
       </div>
+
     </OrgProvider>
   );
 }
