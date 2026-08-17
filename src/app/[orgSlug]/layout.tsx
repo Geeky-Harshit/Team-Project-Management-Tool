@@ -5,6 +5,7 @@ import OrganizationMember from "@/models/organization/OrganizationMember";
 import { redirect, notFound } from "next/navigation";
 import Sidebar from "@/components/sidebar";
 import { OrgProvider } from "@/context/org-context";
+import OrgNotFoundPage from "./not-found";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -22,7 +23,7 @@ export default async function OrgLayout({ children, params }: LayoutProps) {
   await connectDB();
   const org = await Organization.findOne({ slug: orgSlug });
   if (!org) {
-    notFound();
+    return <OrgNotFoundPage />
   }
 
   const membership = await OrganizationMember.findOne({
