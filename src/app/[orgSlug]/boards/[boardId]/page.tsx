@@ -29,7 +29,11 @@ export default async function BoardPage({ params }: PageProps) {
   });
   if (!board) notFound();
 
-  const rawLists = await List.find({ boardId: board._id, archived: false }).sort({ position: 1 });
+  const rawLists = await List.find({
+    boardId: board._id,
+    archived: false,
+  }).sort({ position: 1 });
+
   const rawCards = await CardModel.find({
     listId: { $in: rawLists.map((l) => l._id) },
     archived: false,
@@ -59,14 +63,35 @@ export default async function BoardPage({ params }: PageProps) {
     updatedAt: c.updatedAt.toISOString(),
   }));
 
+  const overdueCount = cards.filter((c) => c.dueDate && new Date(c.dueDate) < new Date()).length;
+
   return (
-    <div className="flex flex-col gap-6 h-full p-6 font-sans">
-      <BoardHeader boardId={boardId} initialName={board.name} />
-      <KanbanBoard
-        initialLists={lists}
-        initialCards={cards}
-        boardId={boardId}
-      />
+    <div className="mx-auto flex h-full w-full max-w-375 flex-col gap-6 p-4 md:p-6">
+      <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+        <BoardHeader boardId={boardId} initialName={board.name} />
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Lists</p>
+            <p className="mt-1 text-xl font-bold text-gray-900">{lists.length}</p>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Tasks</p>
+            <p className="mt-1 text-xl font-bold text-gray-900">{cards.length}</p>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Overdue</p>
+            <p className="mt-1 text-xl font-bold text-red-600">{overdueCount}</p>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Organization</p>
+            <p className="mt-1 truncate text-sm font-semibold text-gray-900">{org.name}</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="min-h-0 flex-1 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm md:p-5">
+        <KanbanBoard initialLists={lists} initialCards={cards} boardId={boardId} />
+      </section>
     </div>
   );
 }
