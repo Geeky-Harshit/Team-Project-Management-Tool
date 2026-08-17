@@ -7,13 +7,15 @@ import List from "../models/board/List";
 import Card from "../models/card/Card";
 import Activity from "../models/activity/Activity";
 import Invite from "../models/organization/Invite";
+import bcrypt from "bcryptjs";
 
-const MONGODB_URI = "mongodb+srv://harshitsetia005:HiMongoDB@cluster0.cru42sb.mongodb.net/tmt"
+const MONGODB_URI = "<MongoDB_URI>"
 
 interface SeedUser {
   id: string;
   name: string;
   email: string;
+  password:string
 }
 
 async function seed() {
@@ -35,15 +37,19 @@ async function seed() {
   if (!db) throw new Error("DB connection not ready");
   await db.collection("user").deleteMany({});
 
+  const password="12345678"
+  const hashedPassword=await bcrypt.hash(password,10);
+
   for (let i = 0; i < 12; i++) {
     const name = faker.person.fullName();
     const email = faker.internet.email().toLowerCase();
     const image = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${name}`;
+    
     const userRes = await db.collection("user").insertOne({
-      name, email, image, emailVerified: true,
+      name, email, image, emailVerified: true, password:hashedPassword,
       createdAt: new Date(), updatedAt: new Date(),
     });
-    users.push({ id: userRes.insertedId.toString(), name, email });
+    users.push({ id: userRes.insertedId.toString(), name, email, password });
   }
   console.log(`Created ${users.length} users.`);
 
@@ -142,6 +148,7 @@ async function seed() {
   });
 
   console.log("Created 2 invite tokens.");
+  console.log(users)
   console.log("Seed complete!");
   process.exit(0);
 }
