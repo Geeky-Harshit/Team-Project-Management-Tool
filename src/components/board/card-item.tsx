@@ -38,7 +38,7 @@ export function CardItem({ card, onClick, dndEnabled = true }: CardItemProps) {
       ref={dndEnabled ? sortable.setNodeRef : undefined}
       style={style}
       onClick={onClick}
-      className="p-3 bg-white hover:border-primary cursor-pointer border-gray-200 shadow-xs text-xs font-medium text-gray-800 transition duration-100 flex flex-col gap-2 font-sans select-none"
+      className="p-3 h-fit min-h-24 bg-white hover:border-primary cursor-pointer border-gray-200 shadow-xs text-xs font-medium text-gray-800 transition duration-100 flex flex-col gap-2 font-sans select-none"
     >
       <div className="flex items-start justify-between gap-2">
         <span className="leading-5">{card.title}</span>

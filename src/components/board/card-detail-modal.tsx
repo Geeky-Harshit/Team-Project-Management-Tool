@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { updateCardDetails, addComment } from "@/actions/cards-action";
-import { authClient } from "@/lib/auth/auth-client";
+import { addComment, updateCardDetails } from "@/actions/cards-action";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card as ICard, Comment } from "@/types";
-import { Calendar, User, X, MessageSquare, CornerDownRight } from "lucide-react";
 import { useOrgs } from "@/hooks/useOrgs";
+import { authClient } from "@/lib/auth/auth-client";
+import { Comment, Card as ICard } from "@/types";
+import { Calendar, CornerDownRight, MessageSquare, User, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ScrollFade } from "../scroll-fade";
 
 interface CardDetailModalProps {
   card: ICard;
@@ -241,25 +242,15 @@ export function CardDetailModal({ card, boardId, onClose }: CardDetailModalProps
             className="text-lg font-bold border-none shadow-none focus-visible:ring-0 p-0 h-8 font-sans"
             disabled={savingDetails}
           />
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              onClick={handleSaveDetails}
-              disabled={savingDetails || postingComment}
-              className="text-xs"
-            >
-              {savingDetails ? "Saving..." : "Save"}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="h-8 w-8 text-gray-400"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="h-8 w-8 text-gray-400"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
@@ -332,13 +323,15 @@ export function CardDetailModal({ card, boardId, onClose }: CardDetailModalProps
                 ) : commentsError ? (
                   <p className="text-xs text-destructive">{commentsError}</p>
                 ) : (
-                  <div className="space-y-3 pt-2">
-                    {rootComments.length === 0 ? (
-                      <p className="text-xs text-gray-500">No comments yet.</p>
-                    ) : (
-                      rootComments.map((comm) => renderComment(comm))
-                    )}
-                  </div>
+                  <ScrollFade maxHeight="max-h-[20rem]" contentClassName="space-y-3 px-4 py-3">
+                    <div className="space-y-3 pt-2">
+                      {rootComments.length === 0 ? (
+                        <p className="text-xs text-gray-500">No comments yet.</p>
+                      ) : (
+                        rootComments.map((comm) => renderComment(comm))
+                      )}
+                    </div>
+                  </ScrollFade>
                 )}
               </div>
             </div>

@@ -66,7 +66,7 @@ export default async function BoardPage({ params }: PageProps) {
   const overdueCount = cards.filter((c) => c.dueDate && new Date(c.dueDate) < new Date()).length;
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-375 flex-col gap-6 p-4 md:p-6">
+    <div className="mx-auto flex h-full w-full max-w-7xl flex-col gap-6 p-4 md:p-6">
       <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
         <BoardHeader boardId={boardId} initialName={board.name} />
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">

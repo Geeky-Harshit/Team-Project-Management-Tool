@@ -17,6 +17,7 @@ import CreateCardForm from "@/components/create-card-form";
 import CreateListForm from "@/components/create-list-form";
 import { CardDetailModal } from "./card-detail-modal";
 import { List, Card } from "@/types";
+import { ScrollFade } from "../scroll-fade";
 
 interface KanbanBoardProps {
   initialLists: List[];
@@ -58,21 +59,23 @@ function ListColumn({ list, cards, boardId, onOpenCard, dndEnabled }: ListColumn
         cardsCount={cards.length}
       />
 
-      {dndEnabled ? (
-        <SortableContext items={cards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
-          <div className="mt-3 flex max-h-[58vh] min-h-24 flex-col gap-2 overflow-y-auto pr-0.5">
+      <ScrollFade maxHeight="max-h-[44vh]" contentClassName="mt-3 p-1 flex flex-col min-h-24">
+        {dndEnabled ? (
+          <SortableContext items={cards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+            <div className="flex flex-col gap-2">
+              {cards.map((card) => (
+                <CardItem key={card.id} card={card} onClick={() => onOpenCard(card)} dndEnabled />
+              ))}
+            </div>
+          </SortableContext>
+        ) : (
+          <div className="flex flex-col gap-2">
             {cards.map((card) => (
-              <CardItem key={card.id} card={card} onClick={() => onOpenCard(card)} dndEnabled />
+              <CardItem key={card.id} card={card} onClick={() => onOpenCard(card)} dndEnabled={false} />
             ))}
           </div>
-        </SortableContext>
-      ) : (
-        <div className="mt-3 flex max-h-[58vh] min-h-24 flex-col gap-2 overflow-y-auto pr-0.5">
-          {cards.map((card) => (
-            <CardItem key={card.id} card={card} onClick={() => onOpenCard(card)} dndEnabled={false} />
-          ))}
-        </div>
-      )}
+        )}
+      </ScrollFade>
 
       <div className="mt-3">
         <CreateCardForm listId={list.id} boardId={boardId} />
@@ -88,7 +91,7 @@ export function KanbanBoard({ initialLists, initialCards, boardId }: KanbanBoard
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    (()=>setMounted(true))();
+    (() => setMounted(true))();
   }, []);
 
   const sensors = useSensors(

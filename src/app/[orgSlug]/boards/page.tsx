@@ -100,36 +100,35 @@ export default async function BoardsPage({ params }: PageProps) {
           <p className="text-xs text-gray-500">{boards.length} results</p>
         </div>
 
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-          {boards.map((board) => {
-            const stats = boardStats.find((s) => s.boardId === board._id.toString());
-            return (
-              <Link key={board._id.toString()} href={"/" + orgSlug + "/boards/" + board._id.toString()}>
-                <Card className="group h-44 cursor-pointer border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
-                  <div className="flex h-full flex-col justify-between">
-                    <div>
-                      <div className="inline-flex rounded-full border border-orange-200 bg-orange-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-orange-700">
-                        Board
-                      </div>
-                      <h3 className="mt-3 line-clamp-2 text-base font-semibold text-gray-900">
-                        {board.name}
-                      </h3>
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">          {boards.map((board) => {
+          const stats = boardStats.find((s) => s.boardId === board._id.toString());
+          return (
+            <Link key={board._id.toString()} href={"/" + orgSlug + "/boards/" + board._id.toString()}>
+              <Card className="group h-44 cursor-pointer border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
+                <div className="flex h-full flex-col justify-between">
+                  <div>
+                    <div className="inline-flex rounded-full border border-orange-200 bg-orange-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-orange-700">
+                      Board
                     </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-xs text-gray-600">
-                        <span className="rounded-md bg-gray-100 px-2 py-1">Lists: {stats?.lists ?? 0}</span>
-                        <span className="rounded-md bg-gray-100 px-2 py-1">Tasks: {stats?.cards ?? 0}</span>
-                      </div>
-                      <p className="text-xs text-gray-500">
-                        Created {new Date(board.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
+                    <h3 className="mt-3 line-clamp-2 text-base font-semibold text-gray-900">
+                      {board.name}
+                    </h3>
                   </div>
-                </Card>
-              </Link>
-            );
-          })}
+
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                      <span className="rounded-md bg-gray-100 px-2 py-1">Lists: {stats?.lists ?? 0}</span>
+                      <span className="rounded-md bg-gray-100 px-2 py-1">Tasks: {stats?.cards ?? 0}</span>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      Created {new Date(board.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            </Link>
+          );
+        })}
 
           <CreateBoardCard organizationId={org._id.toString()} />
         </div>

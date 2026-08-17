@@ -25,17 +25,19 @@ export function MemberRow({
 
   return (
     <div className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0 font-sans">
-      <div className="flex items-center gap-3">
-        <Avatar className="h-9 w-9">
+      <div className="flex items-center gap-3 min-w-0">
+        <Avatar className="h-9 w-9 shrink-0">
           <AvatarFallback className="bg-primary/10 text-primary font-medium">
             {member.user.name[0].toUpperCase()}
           </AvatarFallback>
         </Avatar>
-        <div className="flex flex-col">
-          <span className="text-sm font-semibold text-gray-900">
+        <div className="flex flex-col min-w-0">
+          <span className="text-sm font-semibold text-gray-900 truncate">
             {member.user.name} {isSelf && "(You)"}
           </span>
-          <span className="text-xs text-gray-500">{member.user.email}</span>
+          <span className="text-xs text-gray-500 truncate" title={member.user.email}>
+            {member.user.email}
+          </span>
         </div>
       </div>
 
