@@ -34,8 +34,6 @@ export default async function OrgLayout({ children, params }: LayoutProps) {
     redirect("/dashboard");
   }
 
-  const isAdmin = membership.role === "admin" || membership.role === "owner";
-
   return (
     <OrgProvider
       userId={session.user.id}
@@ -48,7 +46,7 @@ export default async function OrgLayout({ children, params }: LayoutProps) {
       }}
     >
       <div className="flex h-[calc(100vh-4rem)] bg-gray-50 overflow-hidden">
-        <Sidebar orgName={org.name} orgSlug={orgSlug} isAdmin={isAdmin} />
+        <Sidebar orgName={org.name} orgSlug={orgSlug} />
         <main className="flex-1 overflow-y-auto p-8">
           {children}
         </main>
