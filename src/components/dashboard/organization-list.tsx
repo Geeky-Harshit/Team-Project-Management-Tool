@@ -64,7 +64,7 @@ export default function OrganizationList() {
               {orgs.map((org) => (
                 <Link
                   key={org.id}
-                  href={`/${org.slug}/boards`}
+                  href={`/${org.slug}`}
                   className="block p-3 rounded-lg border border-gray-200 hover:border-primary hover:bg-orange-50/20 transition duration-150"
                 >
                   <div className="font-semibold text-gray-900">{org.name}</div>

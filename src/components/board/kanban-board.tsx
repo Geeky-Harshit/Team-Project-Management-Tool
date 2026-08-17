@@ -88,7 +88,7 @@ export function KanbanBoard({ initialLists, initialCards, boardId }: KanbanBoard
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    (()=>setMounted(true))();
   }, []);
 
   const sensors = useSensors(
@@ -210,7 +210,8 @@ export function KanbanBoard({ initialLists, initialCards, boardId }: KanbanBoard
 
   const boardContent = (
     <div className="flex-1 overflow-x-auto pb-2">
-      <div className="flex h-full min-h-[540px] items-start gap-4">
+      <div className="flex h-full min-h-135
+       items-start gap-4">
         {initialLists.map((list) => {
           const listCards = cardsByList.get(list.id) || [];
           return (
