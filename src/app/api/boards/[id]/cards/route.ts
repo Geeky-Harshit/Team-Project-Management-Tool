@@ -114,6 +114,7 @@ export async function PATCH(
   try {
     const { id } = await params;
     const { userId, board } = await checkBoardAccess(id, "member");
+
     const body = (await request.json()) as {
       cardIds?: string[];
       listId?: string;
@@ -124,15 +125,39 @@ export async function PATCH(
       dueDate?: string | null;
     };
 
-    // Bulk drag-and-drop reorder
-    if (body.cardIds && body.listId) {
-      const list = await List.findOne({ _id: body.listId, boardId: board._id });
-      if (!list)
+    // 1) Bulk reorder inside one list
+    if (
+      Array.isArray(body.cardIds) &&
+      body.cardIds.length > 0 &&
+      body.listId &&
+      !body.cardId
+    ) {
+      const list = await List.findOne({
+        _id: body.listId,
+        boardId: board._id,
+        archived: false,
+      });
+
+      if (!list) {
         return NextResponse.json({ error: "Invalid list" }, { status: 400 });
+      }
+
+      const cardsInList = await Card.find({
+        _id: { $in: body.cardIds },
+        listId: body.listId,
+        archived: false,
+      }).select("_id");
+
+      if (cardsInList.length !== body.cardIds.length) {
+        return NextResponse.json(
+          { error: "One or more cards are invalid for this list" },
+          { status: 400 },
+        );
+      }
 
       const bulkOps = body.cardIds.map((cardId, idx) => ({
         updateOne: {
-          filter: { _id: cardId, listId: body.listId },
+          filter: { _id: cardId, listId: body.listId, archived: false },
           update: { position: (idx + 1) * 1000 },
         },
       }));
@@ -144,31 +169,93 @@ export async function PATCH(
         boardId: board._id,
         actorId: userId,
         type: "CARD_MOVED",
-        message: `reordered cards in list "${list.name}"`,
+        message: 'reordered cards in list "' + list.name + '"',
       });
 
       return NextResponse.json({ success: true });
     }
 
-    // Single card update
+    // 2) Single card update (details and/or move to another list)
     if (body.cardId) {
-      const { cardId, ...updates } = body;
-      const card = await Card.findOneAndUpdate({ _id: cardId }, updates, {
-        new: true,
-      });
-      if (!card)
+      const card = await Card.findOne({ _id: body.cardId, archived: false });
+      if (!card) {
         return NextResponse.json({ error: "Card not found" }, { status: 404 });
+      }
+
+      const currentList = await List.findOne({
+        _id: card.listId,
+        boardId: board._id,
+        archived: false,
+      });
+
+      if (!currentList) {
+        return NextResponse.json(
+          { error: "Card does not belong to this board" },
+          { status: 400 },
+        );
+      }
+
+      const updates: Record<string, unknown> = {};
+
+      if (typeof body.title === "string") updates.title = body.title;
+      if (typeof body.description === "string")
+        updates.description = body.description;
+      if ("assigneeId" in body) updates.assigneeId = body.assigneeId ?? null;
+
+      if ("dueDate" in body) {
+        updates.dueDate = body.dueDate ? new Date(body.dueDate) : null;
+      }
+
+      let movedAcrossLists = false;
+
+      if (body.listId && body.listId !== currentList._id.toString()) {
+        const targetList = await List.findOne({
+          _id: body.listId,
+          boardId: board._id,
+          archived: false,
+        });
+
+        if (!targetList) {
+          return NextResponse.json(
+            { error: "Invalid target list" },
+            { status: 400 },
+          );
+        }
+
+        const maxTargetCard = await Card.findOne({
+          listId: targetList._id,
+          archived: false,
+        }).sort({
+          position: -1,
+        });
+
+        updates.listId = targetList._id;
+        updates.position = maxTargetCard ? maxTargetCard.position + 1000 : 1000;
+        movedAcrossLists = true;
+      }
+
+      const updatedCard = await Card.findOneAndUpdate(
+        { _id: body.cardId, archived: false },
+        updates,
+        { new: true },
+      );
+
+      if (!updatedCard) {
+        return NextResponse.json({ error: "Card not found" }, { status: 404 });
+      }
 
       await logActivity({
         organizationId: board.organizationId,
         boardId: board._id,
-        cardId: card._id,
+        cardId: updatedCard._id,
         actorId: userId,
-        type: "CARD_UPDATED",
-        message: `updated card via API`,
+        type: movedAcrossLists ? "CARD_MOVED" : "CARD_UPDATED",
+        message: movedAcrossLists
+          ? "moved card across lists"
+          : "updated card via API",
       });
 
-      return NextResponse.json(card);
+      return NextResponse.json(updatedCard);
     }
 
     return NextResponse.json(
