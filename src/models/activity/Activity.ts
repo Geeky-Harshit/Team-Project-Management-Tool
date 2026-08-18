@@ -11,6 +11,7 @@ interface IActivity {
     | "BOARD_CREATED"
     | "BOARD_RENAMED"
     | "BOARD_ARCHIVED"
+    | "BOARD_RESTORED"
     | "LIST_CREATED"
     | "LIST_RENAMED"
     | "LIST_DELETED"
@@ -57,6 +58,7 @@ const ActivitySchema = new Schema<IActivity>(
         "BOARD_CREATED",
         "BOARD_RENAMED",
         "BOARD_ARCHIVED",
+        "BOARD_RESTORED",
         "LIST_CREATED",
         "LIST_RENAMED",
         "LIST_DELETED",
