@@ -1,85 +1,64 @@
 import "dotenv/config";
-import mongoose from "mongoose";
 import { faker } from "@faker-js/faker";
-import Organization from "../models/organization/Organization";
-import OrganizationMember from "../models/organization/OrganizationMember";
-import Board from "../models/board/Board";
-import List from "../models/board/List";
-import Card from "../models/card/Card";
-import Activity from "../models/activity/Activity";
-import Invite from "../models/organization/Invite";
+import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth/auth";
 
-const MONGODB_URI = process.env.MONGODB_URI!
-
-interface SeedUser {
-  id: string;
-  name: string;
-  email: string;
-}
+const DEFAULT_PASSWORD = "Password@123";
 
 async function seed() {
-  console.log("Connecting to Database...");
-  console.log("MONGODB_URI", MONGODB_URI);
-  await mongoose.connect(MONGODB_URI);
-  console.log("connected to database");
-  await Organization.deleteMany({});
-  await OrganizationMember.deleteMany({});
-  await Board.deleteMany({});
-  await List.deleteMany({});
-  await Card.deleteMany({});
-  await Activity.deleteMany({});
-  await Invite.deleteMany({});
-  console.log("Cleaned old data.");
+  console.log("🌱 Connecting to Neon PostgreSQL and cleaning existing data...");
 
-  const users: SeedUser[] = [];
-  const db = mongoose.connection.db;
-  if (!db) throw new Error("DB connection not ready");
-  await db.collection("user").deleteMany({});
+  // Clean tables in reverse relation order
+  await prisma.activity.deleteMany({});
+  await prisma.comment.deleteMany({});
+  await prisma.card.deleteMany({});
+  await prisma.list.deleteMany({});
+  await prisma.board.deleteMany({});
+  await prisma.invitation.deleteMany({});
+  await prisma.member.deleteMany({});
+  await prisma.organization.deleteMany({});
+  await prisma.session.deleteMany({});
+  await prisma.account.deleteMany({});
+  await prisma.user.deleteMany({});
 
-  const DEFAULT_PASSWORD = "Password@123";
+  console.log("🧹 Cleaned old database records.");
 
-for (let i = 0; i < 12; i++) {
-  const name = faker.person.fullName();
-  const email = faker.internet.email().toLowerCase();
-  const image = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(
-    name
-  )}`;
+  // 1. Create 12 Users via Better-Auth
+  console.log("👥 Creating 12 users...");
+  for (let i = 0; i < 12; i++) {
+    const name = faker.person.fullName();
+    const email = `user${i + 1}@example.com`;
+    const image = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(name)}`;
 
-  await auth.api.signUpEmail({
-    body: {
-      name,
-      email,
-      password: DEFAULT_PASSWORD,
-      image,
-    },
-  });
-
-  const user = await db.collection("user").findOne({ email });
-
-  if (!user) {
-    throw new Error(`Failed to create user ${email}`);
+    await auth.api.signUpEmail({
+      body: {
+        name,
+        email,
+        password: DEFAULT_PASSWORD,
+        image,
+      },
+    });
   }
 
-  users.push({
-    id: user._id.toString(),
-    name,
-    email,
-  });
-}
+  const users = await prisma.user.findMany({ select: { id: true, name: true, email: true } });
+  console.log(`✅ Created ${users.length} users (Password: ${DEFAULT_PASSWORD}).`);
 
-console.log(`Created ${users.length} users.`);
-console.log(`Default password: ${DEFAULT_PASSWORD}`);
-
+  // 2. Create Organizations and Memberships
+  console.log("🏢 Creating organizations and assigning roles...");
   const orgsData = [
     { name: "Acme Kanban Corp", slug: "acme-kanban" },
     { name: "Global Tech Inc", slug: "global-tech" },
     { name: "Alpha Dev Studio", slug: "alpha-devs" },
   ];
 
-  const orgs: Array<{ _id: mongoose.Types.ObjectId }> = [];
+  const orgs = [];
   for (const o of orgsData) {
-    const org = await Organization.create({ name: o.name, slug: o.slug, createdBy: users[0].id });
+    const org = await prisma.organization.create({
+      data: {
+        name: o.name,
+        slug: o.slug,
+      },
+    });
     orgs.push(org);
 
     for (let i = 0; i < users.length; i++) {
@@ -88,89 +67,136 @@ console.log(`Default password: ${DEFAULT_PASSWORD}`);
       else if (i <= 2) role = "admin";
       else if (i === users.length - 1) role = "viewer";
 
-      await OrganizationMember.create({
-        organizationId: org._id,
-        userId: new mongoose.Types.ObjectId(users[i].id),
-        role,
+      await prisma.member.create({
+        data: {
+          organizationId: org.id,
+          userId: users[i].id,
+          role,
+        },
       });
     }
   }
-  console.log(`Created ${orgs.length} organizations.`);
+  console.log(`✅ Created ${orgs.length} organizations.`);
 
-  const boards: Array<{ _id: mongoose.Types.ObjectId }> = [];
-  const boardNames = ["Project Alpha", "Marketing Campaigns", "HR Recruitment", "Software Release v2", "Client Redesign"];
+  // 3. Create Boards
+  console.log("📋 Creating boards...");
+  const boards = [];
+  const boardNames = [
+    "Project Alpha",
+    "Marketing Campaigns",
+    "HR Recruitment",
+    "Software Release v2",
+    "Client Redesign",
+  ];
+
   for (let i = 0; i < boardNames.length; i++) {
-    const board = await Board.create({
-      organizationId: orgs[i % orgs.length]._id,
-      name: boardNames[i],
-      createdBy: users[0].id,
+    const board = await prisma.board.create({
+      data: {
+        organizationId: orgs[i % orgs.length].id,
+        name: boardNames[i],
+      },
     });
     boards.push(board);
   }
-  console.log(`Created ${boards.length} boards.`);
+  console.log(`✅ Created ${boards.length} boards.`);
 
-  const lists: Array<{ _id: mongoose.Types.ObjectId }> = [];
+  // 4. Create Lists
+  console.log("📑 Creating column lists...");
+  const lists = [];
   const columnTitles = ["To Do", "In Progress", "Code Review", "Done"];
+
   for (const board of boards) {
     for (let idx = 0; idx < columnTitles.length; idx++) {
-      const list = await List.create({
-        boardId: board._id,
-        name: columnTitles[idx],
-        position: (idx + 1) * 1000,
+      const list = await prisma.list.create({
+        data: {
+          boardId: board.id,
+          name: columnTitles[idx],
+          position: (idx + 1) * 1000,
+        },
       });
       lists.push(list);
     }
   }
-  console.log(`Created ${lists.length} lists.`);
+  console.log(`✅ Created ${lists.length} lists.`);
 
+  // 5. Create Cards
+  console.log("🃏 Creating 200+ cards...");
   for (let i = 0; i < 220; i++) {
     const list = faker.helpers.arrayElement(lists);
-    await Card.create({
-      listId: list._id,
-      title: faker.hacker.phrase(),
-      description: faker.lorem.paragraph(),
-      assigneeId: faker.helpers.arrayElement(users).id,
-      dueDate: faker.date.between({ from: "2026-08-01", to: "2026-08-30" }),
-      position: (i + 1) * 1000,
-      createdBy: users[0].id,
+    await prisma.card.create({
+      data: {
+        listId: list.id,
+        title: faker.hacker.phrase(),
+        description: faker.lorem.paragraph(),
+        assigneeId: faker.helpers.arrayElement(users).id,
+        dueDate: faker.date.between({ from: "2026-08-01", to: "2026-08-30" }),
+        position: (i + 1) * 1000,
+        createdBy: users[0].id,
+      },
     });
   }
-  console.log("Created 220 cards.");
+  console.log("✅ Created 220 cards.");
 
-  const activityTypes = ["BOARD_CREATED", "LIST_CREATED", "CARD_CREATED", "CARD_MOVED", "COMMENT_ADDED"] as const;
+  // 6. Create Activity Logs
+  console.log("📝 Generating 500+ activity logs...");
+  const activityTypes = [
+    "BOARD_CREATED",
+    "LIST_CREATED",
+    "CARD_CREATED",
+    "CARD_MOVED",
+    "COMMENT_ADDED",
+  ] as const;
+
+  const activityData = [];
   for (let i = 0; i < 510; i++) {
-    await Activity.create({
-      organizationId: faker.helpers.arrayElement(orgs)._id,
+    activityData.push({
+      organizationId: faker.helpers.arrayElement(orgs).id,
       actorId: faker.helpers.arrayElement(users).id,
       type: faker.helpers.arrayElement(activityTypes),
-      message: `performed operation in workspace`,
+      message: "performed operation in workspace",
       createdAt: faker.date.recent({ days: 30 }),
     });
   }
-  console.log("Logged 510 activity rows.");
+  await prisma.activity.createMany({ data: activityData });
+  console.log("✅ Logged 510 activity rows.");
 
+  // 7. Create Sample Invitations
   const validExpires = new Date();
   validExpires.setDate(validExpires.getDate() + 7);
-  await Invite.create({
-    organizationId: orgs[0]._id, email: "join-active@example.com",
-    token: "valid-token-1234", role: "member",
-    invitedBy: users[0].id, expiresAt: validExpires,
+
+  await prisma.invitation.create({
+    data: {
+      id: "valid-token-1234",
+      organizationId: orgs[0].id,
+      email: "join-active@example.com",
+      role: "member",
+      status: "pending",
+      inviterId: users[0].id,
+      expiresAt: validExpires,
+    },
   });
 
   const expiredExpires = new Date();
   expiredExpires.setDate(expiredExpires.getDate() - 1);
-  await Invite.create({
-    organizationId: orgs[0]._id, email: "join-expired@example.com",
-    token: "expired-token-5678", role: "member",
-    invitedBy: users[0].id, expiresAt: expiredExpires,
+
+  await prisma.invitation.create({
+    data: {
+      id: "expired-token-5678",
+      organizationId: orgs[0].id,
+      email: "join-expired@example.com",
+      role: "member",
+      status: "pending",
+      inviterId: users[0].id,
+      expiresAt: expiredExpires,
+    },
   });
 
-  console.log("Created 2 invite tokens.");
-  console.log("Seed complete!");
+  console.log("✅ Created sample invite tokens.");
+  console.log("\n🎉 Database seeded successfully with mock data!");
   process.exit(0);
 }
 
 seed().catch((err) => {
-  console.error("Seeding failed:", err);
+  console.error("❌ Seeding failed:", err);
   process.exit(1);
 });
