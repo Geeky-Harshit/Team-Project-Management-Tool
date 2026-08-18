@@ -1,5 +1,4 @@
-import connectDB from "@/lib/db";
-import OrganizationMember from "@/models/organization/OrganizationMember";
+import { prisma } from "@/lib/prisma";
 import { Role } from "@/types";
 
 const roleHierarchy: Record<Role, number> = {
@@ -14,10 +13,11 @@ export async function getUserOrgRole(
   userId: string,
   organizationId: string,
 ): Promise<Role | null> {
-  await connectDB();
-  const membership = await OrganizationMember.findOne({
-    userId,
-    organizationId,
+  const membership = await prisma.member.findFirst({
+    where: {
+      userId,
+      organizationId,
+    },
   });
   return membership ? (membership.role as Role) : null;
 }

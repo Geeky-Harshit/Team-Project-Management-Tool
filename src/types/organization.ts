@@ -3,8 +3,9 @@ export interface Organization {
   name: string;
   slug: string;
   logo?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+  metadata?: string | null;
+  createdAt: Date | string;
+  updatedAt?: Date | string;
 }
 
 export type Role = "owner" | "admin" | "member" | "viewer";
@@ -14,20 +15,19 @@ export interface OrganizationMember {
   organizationId: string;
   userId: string;
   role: Role;
-  createdAt: Date;
+  createdAt: Date | string;
 }
 
 export interface Invite {
   id: string;
   organizationId: string;
   email: string;
-  token: string;
+  token?: string;
   role: Role;
-  invitedBy: string;
-  expiresAt: Date;
-  usedAt: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
+  invitedBy?: string;
+  status?: string;
+  expiresAt: Date | string;
+  createdAt: Date | string;
 }
 
 export interface MemberUser {
@@ -40,6 +40,6 @@ export interface MemberUser {
 export interface MemberWithUser {
   id: string;
   role: Role;
-  createdAt: Date;
+  createdAt: Date | string;
   user: MemberUser;
 }

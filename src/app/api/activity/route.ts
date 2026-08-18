@@ -1,8 +1,6 @@
 import { getSession } from "@/lib/auth/auth";
 import { requireRole } from "@/lib/auth/permissions";
-import connectDB from "@/lib/db";
-import Activity from "@/models/activity/Activity";
-import Organization from "@/models/organization/Organization";
+import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -18,25 +16,42 @@ export async function GET(request: NextRequest) {
     if (!orgId)
       return NextResponse.json({ error: "orgId required" }, { status: 400 });
 
-    await connectDB();
-    const org = await Organization.findById(orgId);
+    const org = await prisma.organization.findUnique({
+      where: { id: orgId },
+    });
+
     if (!org)
       return NextResponse.json(
         { error: "Organization not found" },
         { status: 404 },
       );
 
-    await requireRole(session.user.id, org._id.toString(), "viewer");
+    await requireRole(session.user.id, org.id, "viewer");
 
-    const query: Record<string, unknown> = { organizationId: org._id };
+    const where: { organizationId: string; createdAt?: { lt: Date } } = {
+      organizationId: org.id,
+    };
+
     if (cursor) {
-      query.createdAt = { $lt: new Date(cursor) };
+      where.createdAt = { lt: new Date(cursor) };
     }
 
-    const activities = await Activity.find(query)
-      .sort({ createdAt: -1 })
+    const activities = await prisma.activity.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+    });
+
     return NextResponse.json({
-      activities
+      activities: activities.map((a) => ({
+        id: a.id,
+        organizationId: a.organizationId,
+        boardId: a.boardId,
+        cardId: a.cardId,
+        actorId: a.actorId,
+        type: a.type,
+        message: a.message,
+        createdAt: a.createdAt.toISOString(),
+      })),
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";

@@ -1,6 +1,4 @@
-import connectDB from "@/lib/db";
-import Invite from "@/models/organization/Invite";
-import Organization from "@/models/organization/Organization";
+import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
@@ -9,8 +7,15 @@ export async function GET(
 ) {
   try {
     const { token } = await params;
-    await connectDB();
-    const invite = await Invite.findOne({ token, usedAt: null });
+
+    const invite = await prisma.invitation.findFirst({
+      where: { id: token, status: "pending" },
+      include: {
+        organization: {
+          select: { name: true, slug: true },
+        },
+      },
+    });
 
     if (!invite) {
       return NextResponse.json(
@@ -26,12 +31,11 @@ export async function GET(
       );
     }
 
-    const org = await Organization.findById(invite.organizationId).select(
-      "name slug",
-    );
     return NextResponse.json({
       invite,
-      organization: org ? { name: org.name, slug: org.slug } : null,
+      organization: invite.organization
+        ? { name: invite.organization.name, slug: invite.organization.slug }
+        : null,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";

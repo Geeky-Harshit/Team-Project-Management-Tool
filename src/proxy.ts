@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
-import connectDB from "@/lib/db";
-import Organization from "@/models/organization/Organization";
-import OrganizationMember from "@/models/organization/OrganizationMember";
+import { prisma } from "@/lib/prisma";
 
 const PUBLIC_ROUTES = [
   "/sign-in",
@@ -51,11 +49,10 @@ export async function proxy(request: NextRequest) {
 
     // Only run organization verification if the slug is NOT in the reserved list
     if (!RESERVED_SLUGS.includes(orgSlug)) {
-      await connectDB();
-
-      const organization = await Organization.findOne({
-        slug: orgSlug,
-      }).select("_id");
+      const organization = await prisma.organization.findUnique({
+        where: { slug: orgSlug },
+        select: { id: true },
+      });
 
       if (!organization) {
         return NextResponse.rewrite(
@@ -64,9 +61,11 @@ export async function proxy(request: NextRequest) {
         );
       }
 
-      const membership = await OrganizationMember.findOne({
-        organizationId: organization._id,
-        userId: session.user.id,
+      const membership = await prisma.member.findFirst({
+        where: {
+          organizationId: organization.id,
+          userId: session.user.id,
+        },
       });
 
       if (!membership) {

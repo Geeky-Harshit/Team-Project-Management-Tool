@@ -2,9 +2,7 @@
 
 import { logActivity } from "@/lib/activity-logger";
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
-import connectDB from "@/lib/db";
-import Board from "@/models/board/Board";
-import List from "@/models/board/List";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
 export async function createList(formData: FormData) {
@@ -14,22 +12,28 @@ export async function createList(formData: FormData) {
 
   const { user, org } = await validateOrgAccess(orgId, "member");
 
-  await connectDB();
-  const board = await Board.findOne({ _id: boardId, organizationId: org._id });
+  const board = await prisma.board.findFirst({
+    where: { id: boardId, organizationId: org.id },
+  });
   if (!board) throw new Error("Board access denied");
 
-  const maxPositionList = await List.findOne({ boardId }).sort({ position: -1 });
+  const maxPositionList = await prisma.list.findFirst({
+    where: { boardId },
+    orderBy: { position: "desc" },
+  });
   const position = maxPositionList ? maxPositionList.position + 1000 : 1000;
 
-  const list = await List.create({
-    name,
-    boardId,
-    position,
+  const list = await prisma.list.create({
+    data: {
+      name,
+      boardId,
+      position,
+    },
   });
 
   await logActivity({
-    organizationId: org._id,
-    boardId: board._id,
+    organizationId: org.id,
+    boardId: board.id,
     actorId: user.id,
     type: "LIST_CREATED",
     message: `created list "${name}" on board "${board.name}"`,
@@ -41,19 +45,19 @@ export async function createList(formData: FormData) {
 export async function renameList(listId: string, boardId: string, orgId: string, newName: string) {
   const { user, org } = await validateOrgAccess(orgId, "member");
 
-  await connectDB();
-  const board = await Board.findOne({ _id: boardId, organizationId: org._id });
+  const board = await prisma.board.findFirst({
+    where: { id: boardId, organizationId: org.id },
+  });
   if (!board) throw new Error("Board access denied");
 
-  const list = await List.findOneAndUpdate(
-    { _id: listId, boardId },
-    { name: newName },
-    { new: true }
-  );
+  const list = await prisma.list.update({
+    where: { id: listId, boardId },
+    data: { name: newName },
+  });
 
   await logActivity({
-    organizationId: org._id,
-    boardId: board._id,
+    organizationId: org.id,
+    boardId: board.id,
     actorId: user.id,
     type: "LIST_RENAMED",
     message: `renamed list to "${newName}" on board "${board.name}"`,
@@ -65,16 +69,19 @@ export async function renameList(listId: string, boardId: string, orgId: string,
 export async function deleteList(listId: string, boardId: string, orgId: string) {
   const { user, org } = await validateOrgAccess(orgId, "member");
 
-  await connectDB();
-  const board = await Board.findOne({ _id: boardId, organizationId: org._id });
+  const board = await prisma.board.findFirst({
+    where: { id: boardId, organizationId: org.id },
+  });
   if (!board) throw new Error("Board access denied");
 
-  const list = await List.findOneAndDelete({ _id: listId, boardId });
+  const list = await prisma.list.delete({
+    where: { id: listId, boardId },
+  });
   if (!list) throw new Error("List not found");
 
   await logActivity({
-    organizationId: org._id,
-    boardId: board._id,
+    organizationId: org.id,
+    boardId: board.id,
     actorId: user.id,
     type: "LIST_DELETED",
     message: `deleted list "${list.name}" on board "${board.name}"`,

@@ -1,8 +1,4 @@
-import connectDB from "@/lib/db";
-import Board from "@/models/board/Board";
-import List from "@/models/board/List";
-import CardModel from "@/models/card/Card";
-import Organization from "@/models/organization/Organization";
+import { prisma } from "@/lib/prisma";
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
 import { notFound } from "next/navigation";
 import { BoardHeader } from "@/components/board/board-header";
@@ -16,33 +12,44 @@ interface PageProps {
 export default async function BoardPage({ params }: PageProps) {
   const { orgSlug, boardId } = await params;
 
-  await connectDB();
-  const org = await Organization.findOne({ slug: orgSlug });
+  const org = await prisma.organization.findUnique({
+    where: { slug: orgSlug },
+  });
   if (!org) notFound();
 
-  const { role } = await validateOrgAccess(org._id.toString(), "viewer");
+  const { role } = await validateOrgAccess(org.id, "viewer");
   const canEdit = role === "owner" || role === "admin" || role === "member";
 
-  const board = await Board.findOne({
-    _id: boardId,
-    organizationId: org._id,
-    archived: false,
+  const board = await prisma.board.findFirst({
+    where: {
+      id: boardId,
+      organizationId: org.id,
+      archived: false,
+    },
   });
   if (!board) notFound();
 
-  const rawLists = await List.find({
-    boardId: board._id,
-    archived: false,
-  }).sort({ position: 1 });
+  const rawLists = await prisma.list.findMany({
+    where: {
+      boardId: board.id,
+      archived: false,
+    },
+    orderBy: { position: "asc" },
+  });
 
-  const rawCards = await CardModel.find({
-    listId: { $in: rawLists.map((l) => l._id) },
-    archived: false,
-  }).sort({ position: 1 });
+  const listIds = rawLists.map((l) => l.id);
+
+  const rawCards = await prisma.card.findMany({
+    where: {
+      listId: { in: listIds },
+      archived: false,
+    },
+    orderBy: { position: "asc" },
+  });
 
   const lists: IList[] = rawLists.map((l) => ({
-    id: l._id.toString(),
-    boardId: l.boardId.toString(),
+    id: l.id,
+    boardId: l.boardId,
     name: l.name,
     position: l.position,
     archived: l.archived ?? false,
@@ -51,8 +58,8 @@ export default async function BoardPage({ params }: PageProps) {
   }));
 
   const cards: ICard[] = rawCards.map((c) => ({
-    id: c._id.toString(),
-    listId: c.listId.toString(),
+    id: c.id,
+    listId: c.listId,
     title: c.title,
     description: c.description || "",
     dueDate: c.dueDate ? c.dueDate.toISOString() : null,

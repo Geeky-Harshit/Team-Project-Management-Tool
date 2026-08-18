@@ -1,8 +1,6 @@
 import { getSession } from "@/lib/auth/auth";
-import connectDB from "@/lib/db";
-import Organization from "@/models/organization/Organization";
-import OrganizationMember from "@/models/organization/OrganizationMember";
-import { redirect, notFound } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
 import Sidebar from "@/components/sidebar";
 import { OrgProvider } from "@/context/org-context";
 import OrgNotFoundPage from "./not-found";
@@ -20,15 +18,19 @@ export default async function OrgLayout({ children, params }: LayoutProps) {
     redirect("/sign-in");
   }
 
-  await connectDB();
-  const org = await Organization.findOne({ slug: orgSlug });
+  const org = await prisma.organization.findUnique({
+    where: { slug: orgSlug },
+  });
+
   if (!org) {
-    return <OrgNotFoundPage />
+    return <OrgNotFoundPage />;
   }
 
-  const membership = await OrganizationMember.findOne({
-    organizationId: org._id,
-    userId: session.user.id,
+  const membership = await prisma.member.findFirst({
+    where: {
+      organizationId: org.id,
+      userId: session.user.id,
+    },
   });
 
   if (!membership) {
@@ -39,11 +41,10 @@ export default async function OrgLayout({ children, params }: LayoutProps) {
     <OrgProvider
       userId={session.user.id}
       initialCurrentOrg={{
-        id: org._id.toString(),
+        id: org.id,
         name: org.name,
         slug: org.slug,
-        createdAt: org.createdAt,
-        updatedAt: org.updatedAt,
+        createdAt: org.createdAt.toISOString(),
       }}
     >
       <div className="flex flex-col md:flex-row h-[calc(100vh-4rem)] bg-gray-50 overflow-hidden relative">
@@ -52,7 +53,6 @@ export default async function OrgLayout({ children, params }: LayoutProps) {
           {children}
         </main>
       </div>
-
     </OrgProvider>
   );
 }

@@ -1,14 +1,9 @@
 import { logActivity } from "@/lib/activity-logger";
 import { getSession } from "@/lib/auth/auth";
 import { requireRole } from "@/lib/auth/permissions";
-import connectDB from "@/lib/db";
 import { sendInviteEmail } from "@/lib/mailer";
-import Invite from "@/models/organization/Invite";
-import Organization from "@/models/organization/Organization";
-import OrganizationMember from "@/models/organization/OrganizationMember";
+import { prisma } from "@/lib/prisma";
 import { Role } from "@/types";
-import crypto from "crypto";
-import mongoose from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -26,14 +21,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    await connectDB();
     await requireRole(session.user.id, organizationId, "member");
 
-    const invites = await Invite.find({
-      organizationId,
-      usedAt: null,
-      expiresAt: { $gt: new Date() },
-    }).sort({ createdAt: -1 });
+    const invites = await prisma.invitation.findMany({
+      where: {
+        organizationId,
+        status: "pending",
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { expiresAt: "desc" },
+    });
 
     return NextResponse.json(invites);
   } catch (err: unknown) {
@@ -62,27 +59,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await connectDB();
     await requireRole(session.user.id, organizationId, "admin");
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    const db = mongoose.connection.db;
-    if (!db) {
-      return NextResponse.json(
-        { error: "Database connection not ready" },
-        { status: 500 },
-      );
-    }
+    const existingUser = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+      select: { id: true },
+    });
 
-    const existingUser = await db
-      .collection("user")
-      .findOne({ email: normalizedEmail }, { projection: { _id: 1 } });
-
-    if (existingUser?._id) {
-      const existingMember = await OrganizationMember.findOne({
-        organizationId,
-        userId: existingUser._id,
+    if (existingUser) {
+      const existingMember = await prisma.member.findFirst({
+        where: {
+          organizationId,
+          userId: existingUser.id,
+        },
       });
 
       if (existingMember) {
@@ -96,11 +87,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const activeInvite = await Invite.findOne({
-      organizationId,
-      email: normalizedEmail,
-      usedAt: null,
-      expiresAt: { $gt: new Date() },
+    const activeInvite = await prisma.invitation.findFirst({
+      where: {
+        organizationId,
+        email: normalizedEmail,
+        status: "pending",
+        expiresAt: { gt: new Date() },
+      },
     });
 
     if (activeInvite) {
@@ -113,17 +106,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const token = crypto.randomUUID();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 1);
 
-    const invite = await Invite.create({
-      organizationId,
-      email: normalizedEmail,
-      token,
-      role: role || "member",
-      invitedBy: session.user.id,
-      expiresAt,
+    const invite = await prisma.invitation.create({
+      data: {
+        organizationId,
+        email: normalizedEmail,
+        role: role || "member",
+        status: "pending",
+        inviterId: session.user.id,
+        expiresAt,
+      },
     });
 
     await logActivity({
@@ -133,8 +127,12 @@ export async function POST(request: NextRequest) {
       message: "invited " + normalizedEmail + " as " + (role || "member"),
     });
 
-    const org = await Organization.findById(organizationId).select("name");
-    const joinUrl = request.nextUrl.origin + "/invite?token=" + token;
+    const org = await prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { name: true },
+    });
+
+    const joinUrl = request.nextUrl.origin + "/invite?token=" + invite.id;
 
     try {
       await sendInviteEmail({
@@ -150,19 +148,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ invite, joinUrl }, { status: 201 });
   } catch (err: unknown) {
-    if (typeof err === "object" && err !== null && "code" in err) {
-      const code = (err as { code?: unknown }).code;
-      if (code === 11000) {
-        return NextResponse.json(
-          {
-            error:
-              "An active invite for this email already exists in this organization.",
-          },
-          { status: 409 },
-        );
-      }
-    }
-
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 400 });
   }
@@ -187,14 +172,14 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await connectDB();
     await requireRole(session.user.id, organizationId, "admin");
 
-    const invite = await Invite.findOne({
-      organizationId,
-      token,
-      usedAt: null,
-      expiresAt: { $gt: new Date() },
+    const invite = await prisma.invitation.findFirst({
+      where: {
+        id: token,
+        organizationId,
+        status: "pending",
+      },
     });
 
     if (!invite) {
@@ -204,7 +189,9 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await Invite.deleteOne({ _id: invite._id });
+    await prisma.invitation.delete({
+      where: { id: invite.id },
+    });
 
     await logActivity({
       organizationId,

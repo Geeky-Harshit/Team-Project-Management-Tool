@@ -1,9 +1,7 @@
 import { logActivity } from "@/lib/activity-logger";
 import { getSession } from "@/lib/auth/auth";
 import { requireRole } from "@/lib/auth/permissions";
-import connectDB from "@/lib/db";
-import Board from "@/models/board/Board";
-import Organization from "@/models/organization/Organization";
+import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
@@ -16,30 +14,29 @@ export async function GET(
     if (!session)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    await connectDB();
-    const org = await Organization.findOne({ slug });
+    const org = await prisma.organization.findUnique({
+      where: { slug },
+    });
     if (!org)
       return NextResponse.json(
         { error: "Organization not found" },
         { status: 404 },
       );
 
-    await requireRole(session.user.id, org._id.toString(), "viewer");
+    await requireRole(session.user.id, org.id, "viewer");
 
-    const boards = await Board.find({
-      organizationId: org._id,
-      archived: false,
-    }).sort({ createdAt: -1 });
+    const boards = await prisma.board.findMany({
+      where: {
+        organizationId: org.id,
+        archived: false,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
     return NextResponse.json(boards);
   } catch (err: unknown) {
-    if (err instanceof Error) {
-      return NextResponse.json({ error: err.message }, { status: 400 });
-    } else {
-      return NextResponse.json(
-        { error: "Something went wrong while getting boards" },
-        { status: 400 },
-      );
-    }
+    const message = err instanceof Error ? err.message : "Something went wrong while getting boards";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }
 
@@ -57,25 +54,27 @@ export async function POST(
     if (!name)
       return NextResponse.json({ error: "Name required" }, { status: 400 });
 
-    await connectDB();
-    const org = await Organization.findOne({ slug });
+    const org = await prisma.organization.findUnique({
+      where: { slug },
+    });
     if (!org)
       return NextResponse.json(
         { error: "Organization not found" },
         { status: 404 },
       );
 
-    await requireRole(session.user.id, org._id.toString(), "member");
+    await requireRole(session.user.id, org.id, "member");
 
-    const board = await Board.create({
-      name,
-      organizationId: org._id,
-      createdBy: session.user.id,
+    const board = await prisma.board.create({
+      data: {
+        name,
+        organizationId: org.id,
+      },
     });
 
     await logActivity({
-      organizationId: org._id,
-      boardId: board._id,
+      organizationId: org.id,
+      boardId: board.id,
       actorId: session.user.id,
       type: "BOARD_CREATED",
       message: `created board "${name}" via API`,
@@ -83,13 +82,7 @@ export async function POST(
 
     return NextResponse.json(board, { status: 201 });
   } catch (err: unknown) {
-    if (err instanceof Error) {
-      return NextResponse.json({ error: err.message }, { status: 400 });
-    } else {
-      return NextResponse.json(
-        { error: "Something went wrong while creating board" },
-        { status: 400 },
-      );
-    }
+    const message = err instanceof Error ? err.message : "Something went wrong while creating board";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }

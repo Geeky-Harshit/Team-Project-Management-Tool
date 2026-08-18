@@ -1,7 +1,5 @@
 import { getSession } from "@/lib/auth/auth";
-import connectDB from "@/lib/db";
-import Organization from "@/models/organization/Organization";
-import OrganizationMember from "@/models/organization/OrganizationMember";
+import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import MembersClient from "@/components/members/members-client";
 
@@ -15,13 +13,16 @@ export default async function MembersPage({ params }: PageProps) {
 
   if (!session) redirect("/sign-in");
 
-  await connectDB();
-  const org = await Organization.findOne({ slug: orgSlug });
+  const org = await prisma.organization.findUnique({
+    where: { slug: orgSlug },
+  });
   if (!org) notFound();
 
-  const membership = await OrganizationMember.findOne({
-    organizationId: org._id,
-    userId: session.user.id,
+  const membership = await prisma.member.findFirst({
+    where: {
+      organizationId: org.id,
+      userId: session.user.id,
+    },
   });
 
   if (!membership) redirect("/dashboard");
@@ -30,7 +31,7 @@ export default async function MembersPage({ params }: PageProps) {
 
   return (
     <MembersClient
-      orgId={org._id.toString()}
+      orgId={org.id}
       isAdmin={isAdmin}
       currentUserId={session.user.id}
     />

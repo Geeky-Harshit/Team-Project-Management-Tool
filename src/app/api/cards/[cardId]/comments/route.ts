@@ -1,10 +1,6 @@
 import { getSession } from "@/lib/auth/auth";
 import { requireRole } from "@/lib/auth/permissions";
-import connectDB from "@/lib/db";
-import Board from "@/models/board/Board";
-import List from "@/models/board/List";
-import Card from "@/models/card/Card";
-import Comment from "@/models/card/Comment";
+import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
@@ -19,42 +15,39 @@ export async function GET(
 
     const { cardId } = await params;
 
-    await connectDB();
+    const card = await prisma.card.findUnique({
+      where: { id: cardId },
+      include: {
+        list: {
+          include: {
+            board: true,
+          },
+        },
+      },
+    });
 
-    const card = await Card.findById(cardId).select("_id listId");
-    if (!card) {
+    if (!card || !card.list?.board) {
       return NextResponse.json({ error: "Card not found" }, { status: 404 });
-    }
-
-    const list = await List.findById(card.listId).select("_id boardId");
-    if (!list) {
-      return NextResponse.json({ error: "List not found" }, { status: 404 });
-    }
-
-    const board = await Board.findById(list.boardId).select(
-      "_id organizationId",
-    );
-    if (!board) {
-      return NextResponse.json({ error: "Board not found" }, { status: 404 });
     }
 
     await requireRole(
       session.user.id,
-      board.organizationId.toString(),
+      card.list.board.organizationId,
       "viewer",
     );
 
-    const comments = await Comment.find({ cardId: card._id }).sort({
-      createdAt: 1,
+    const comments = await prisma.comment.findMany({
+      where: { cardId: card.id },
+      orderBy: { createdAt: "asc" },
     });
 
     return NextResponse.json(
       comments.map((c) => ({
-        id: c._id.toString(),
-        cardId: c.cardId.toString(),
+        id: c.id,
+        cardId: c.cardId,
         authorId: c.authorId,
         content: c.content,
-        parentId: c.parentId ? c.parentId.toString() : null,
+        parentId: c.parentId,
         createdAt: c.createdAt.toISOString(),
         updatedAt: c.updatedAt.toISOString(),
       })),

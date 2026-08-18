@@ -1,17 +1,11 @@
-import connectDB from "@/lib/db";
-import Organization from "@/models/organization/Organization";
-import Board from "@/models/board/Board";
-import List from "@/models/board/List";
-import CardModel from "@/models/card/Card";
-import ActivityModel from "@/models/activity/Activity";
+import { prisma } from "@/lib/prisma";
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
 import { DashboardStats } from "@/components/dashboard/dashboard-stats";
 import { OverdueTasksList } from "@/components/dashboard/overdue-tasks";
 import { WorkloadBreakdown, WorkloadEntry } from "@/components/dashboard/workload-breakdown";
 import { WorkspaceActivityFeed } from "@/components/dashboard/workspace-activity";
 import { notFound } from "next/navigation";
-import { Card, Activity } from "@/types";
-import mongoose from "mongoose";
+import { Card, Activity, ActivityType } from "@/types";
 
 export default async function OrgDashboardPage({
   params,
@@ -20,26 +14,36 @@ export default async function OrgDashboardPage({
 }) {
   const { orgSlug } = await params;
 
-  await connectDB();
-  const org = await Organization.findOne({ slug: orgSlug });
+  const org = await prisma.organization.findUnique({
+    where: { slug: orgSlug },
+  });
   if (!org) notFound();
 
-  await validateOrgAccess(org._id.toString(), "viewer");
+  await validateOrgAccess(org.id, "viewer");
 
-  // Single batch database queries
-  const boards = await Board.find({ organizationId: org._id, archived: false });
-  const boardIds = boards.map((b) => b._id);
+  // Fetch data in batch via Prisma
+  const boards = await prisma.board.findMany({
+    where: { organizationId: org.id, archived: false },
+  });
+  const boardIds = boards.map((b) => b.id);
 
-  const lists = await List.find({ boardId: { $in: boardIds }, archived: false });
-  const listIds = lists.map((l) => l._id);
+  const lists = await prisma.list.findMany({
+    where: { boardId: { in: boardIds }, archived: false },
+  });
+  const listIds = lists.map((l) => l.id);
 
-  const rawCards = await CardModel.find({ listId: { $in: listIds }, archived: false });
-  const rawActivities = await ActivityModel.find({ organizationId: org._id })
-    .sort({ createdAt: -1 })
+  const rawCards = await prisma.card.findMany({
+    where: { listId: { in: listIds }, archived: false },
+  });
+
+  const rawActivities = await prisma.activity.findMany({
+    where: { organizationId: org.id },
+    orderBy: { createdAt: "desc" },
+  });
 
   const allCards: Card[] = rawCards.map((c) => ({
-    id: c._id.toString(),
-    listId: c.listId.toString(),
+    id: c.id,
+    listId: c.listId,
     title: c.title,
     description: c.description || "",
     dueDate: c.dueDate ? c.dueDate.toISOString() : null,
@@ -52,39 +56,33 @@ export default async function OrgDashboardPage({
   }));
 
   const activities: Activity[] = rawActivities.map((a) => ({
-    id: a._id.toString(),
-    organizationId: a.organizationId.toString(),
-    boardId: a.boardId ? a.boardId.toString() : null,
-    cardId: a.cardId ? a.cardId.toString() : null,
+    id: a.id,
+    organizationId: a.organizationId,
+    boardId: a.boardId || null,
+    cardId: a.cardId || null,
     actorId: a.actorId,
-    type: a.type,
+    type: a.type as ActivityType,
     message: a.message,
     createdAt: a.createdAt.toISOString(),
-    updatedAt: a.updatedAt.toISOString(),
   }));
 
   const now = new Date();
   const overdue = allCards.filter((c) => c.dueDate && new Date(c.dueDate) < now);
 
-  // Resolve user names & emails for assignees
+  // Resolve user names & emails for assignees via Prisma
   const assigneeIds = Array.from(
     new Set(allCards.map((c) => c.assigneeId).filter(Boolean))
   ) as string[];
 
   const userMap = new Map<string, { name: string; email: string }>();
-  const db = mongoose.connection.db;
-  if (db && assigneeIds.length > 0) {
-    const users = await db
-      .collection("user")
-      .find(
-        { _id: { $in: assigneeIds.map((id) => new mongoose.Types.ObjectId(id)) } },
-      )
-      .toArray();
+  if (assigneeIds.length > 0) {
+    const users = await prisma.user.findMany({
+      where: { id: { in: assigneeIds } },
+      select: { id: true, name: true, email: true },
+    });
 
     users.forEach((u) => {
-      const info = { name: u.name || "User", email: u.email || "" };
-      if (u.id) userMap.set(u.id, info);
-      if (u._id) userMap.set(u._id.toString(), info);
+      userMap.set(u.id, { name: u.name || "User", email: u.email });
     });
   }
 

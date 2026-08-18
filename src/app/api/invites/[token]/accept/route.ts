@@ -1,8 +1,6 @@
 import { logActivity } from "@/lib/activity-logger";
 import { getSession } from "@/lib/auth/auth";
-import connectDB from "@/lib/db";
-import Invite from "@/models/organization/Invite";
-import OrganizationMember from "@/models/organization/OrganizationMember";
+import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(
@@ -15,8 +13,10 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { token } = await params;
-    await connectDB();
-    const invite = await Invite.findOne({ token, usedAt: null });
+
+    const invite = await prisma.invitation.findFirst({
+      where: { id: token, status: "pending" },
+    });
 
     if (!invite || new Date() > invite.expiresAt) {
       return NextResponse.json(
@@ -25,14 +25,19 @@ export async function POST(
       );
     }
 
-    await OrganizationMember.create({
-      organizationId: invite.organizationId,
-      userId: session.user.id,
-      role: invite.role,
-    });
-
-    invite.usedAt = new Date();
-    await invite.save();
+    await prisma.$transaction([
+      prisma.member.create({
+        data: {
+          organizationId: invite.organizationId,
+          userId: session.user.id,
+          role: invite.role || "member",
+        },
+      }),
+      prisma.invitation.update({
+        where: { id: invite.id },
+        data: { status: "accepted" },
+      }),
+    ]);
 
     await logActivity({
       organizationId: invite.organizationId,
