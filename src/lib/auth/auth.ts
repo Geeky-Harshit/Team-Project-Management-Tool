@@ -1,7 +1,6 @@
 import { betterAuth } from "better-auth";
-import { mongodbAdapter } from "better-auth/adapters/mongodb";
+import { prismaAdapter } from "better-auth/adapters/prisma";
 import { organization } from "better-auth/plugins/organization";
-import { MongoClient } from "mongodb";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createAccessControl } from "better-auth/plugins/access";
@@ -11,21 +10,18 @@ import {
   adminAc,
   memberAc,
 } from "better-auth/plugins/organization/access";
-
-const client = new MongoClient(process.env.MONGODB_URI!);
-const db = client.db();
+import { prisma } from "@/lib/prisma";
 
 const statements = {
   ...defaultStatements,
 } as const;
 
 const ac = createAccessControl(statements);
-
 const viewer = ac.newRole({});
 
 export const auth = betterAuth({
-  database: mongodbAdapter(db, {
-    client,
+  database: prismaAdapter(prisma, {
+    provider: "postgresql",
   }),
   emailAndPassword: {
     enabled: true,
