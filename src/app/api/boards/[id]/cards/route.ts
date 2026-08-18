@@ -1,17 +1,13 @@
 import { logActivity } from "@/lib/activity-logger";
 import { getSession } from "@/lib/auth/auth";
 import { requireRole } from "@/lib/auth/permissions";
-import connectDB from "@/lib/db";
-import Board from "@/models/board/Board";
-import List from "@/models/board/List";
-import Card from "@/models/card/Card";
+import { prisma } from "@/lib/prisma";
 import { Role } from "@/types";
-import mongoose from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
 
 interface BoardDoc {
-  _id: mongoose.Types.ObjectId;
-  organizationId: mongoose.Types.ObjectId;
+  id: string;
+  organizationId: string;
   name: string;
 }
 
@@ -22,12 +18,13 @@ async function checkBoardAccess(
   const session = await getSession();
   if (!session) throw new Error("Unauthorized");
 
-  await connectDB();
-  const board = await Board.findById(boardId);
+  const board = await prisma.board.findUnique({
+    where: { id: boardId },
+  });
   if (!board) throw new Error("Board not found");
 
-  await requireRole(session.user.id, board.organizationId.toString(), minRole);
-  return { userId: session.user.id, board: board as BoardDoc };
+  await requireRole(session.user.id, board.organizationId, minRole);
+  return { userId: session.user.id, board };
 }
 
 export async function GET(
@@ -37,14 +34,18 @@ export async function GET(
   try {
     const { id } = await params;
     const { board } = await checkBoardAccess(id, "viewer");
-    const lists = await List.find({
-      boardId: board._id,
-      archived: false,
-    }).select("_id");
-    const cards = await Card.find({
-      listId: { $in: lists.map((l) => l._id) },
-      archived: false,
-    }).sort({ position: 1 });
+
+    const lists = await prisma.list.findMany({
+      where: { boardId: board.id, archived: false },
+      select: { id: true },
+    });
+
+    const listIds = lists.map((l) => l.id);
+
+    const cards = await prisma.card.findMany({
+      where: { listId: { in: listIds }, archived: false },
+      orderBy: { position: "asc" },
+    });
 
     return NextResponse.json(cards);
   } catch (err: unknown) {
@@ -72,29 +73,34 @@ export async function POST(
       );
     }
 
-    const list = await List.findOne({ _id: listId, boardId: board._id });
+    const list = await prisma.list.findFirst({
+      where: { id: listId, boardId: board.id },
+    });
     if (!list)
       return NextResponse.json(
         { error: "Invalid list for this board" },
         { status: 400 },
       );
 
-    const maxPositionCard = await Card.findOne({ listId }).sort({
-      position: -1,
+    const maxPositionCard = await prisma.card.findFirst({
+      where: { listId },
+      orderBy: { position: "desc" },
     });
     const position = maxPositionCard ? maxPositionCard.position + 1000 : 1000;
 
-    const card = await Card.create({
-      title,
-      listId,
-      position,
-      createdBy: userId,
+    const card = await prisma.card.create({
+      data: {
+        title,
+        listId,
+        position,
+        createdBy: userId,
+      },
     });
 
     await logActivity({
       organizationId: board.organizationId,
-      boardId: board._id,
-      cardId: card._id,
+      boardId: board.id,
+      cardId: card.id,
       actorId: userId,
       type: "CARD_CREATED",
       message: `created card "${title}" via API`,
@@ -129,7 +135,7 @@ export async function PATCH(
       dueDate?: string | null;
     };
 
-    // 1) Move card across lists + update orders in both lists atomically
+    // 1) Move card across lists + update orders in both lists inside an atomic SQL transaction
     if (
       body.cardId &&
       body.targetListId &&
@@ -137,38 +143,29 @@ export async function PATCH(
       Array.isArray(body.targetCardIds) &&
       Array.isArray(body.sourceCardIds)
     ) {
-      // 1. Move card to target list
-      await Card.updateOne(
-        { _id: body.cardId, archived: false },
-        { listId: body.targetListId }
-      );
-
-      // 2. Update target list positions
-      const targetBulkOps = body.targetCardIds.map((cardId, idx) => ({
-        updateOne: {
-          filter: { _id: cardId, archived: false },
-          update: { listId: body.targetListId, position: (idx + 1) * 1000 },
-        },
-      }));
-      if (targetBulkOps.length > 0) {
-        await Card.bulkWrite(targetBulkOps);
-      }
-
-      // 3. Update source list positions
-      const sourceBulkOps = body.sourceCardIds.map((cardId, idx) => ({
-        updateOne: {
-          filter: { _id: cardId, archived: false },
-          update: { listId: body.sourceListId, position: (idx + 1) * 1000 },
-        },
-      }));
-      if (sourceBulkOps.length > 0) {
-        await Card.bulkWrite(sourceBulkOps);
-      }
+      await prisma.$transaction([
+        prisma.card.update({
+          where: { id: body.cardId },
+          data: { listId: body.targetListId },
+        }),
+        ...body.targetCardIds.map((cardId, idx) =>
+          prisma.card.update({
+            where: { id: cardId },
+            data: { listId: body.targetListId, position: (idx + 1) * 1000 },
+          }),
+        ),
+        ...body.sourceCardIds.map((cardId, idx) =>
+          prisma.card.update({
+            where: { id: cardId },
+            data: { listId: body.sourceListId, position: (idx + 1) * 1000 },
+          }),
+        ),
+      ]);
 
       await logActivity({
         organizationId: board.organizationId,
-        boardId: board._id,
-        cardId: new mongoose.Types.ObjectId(body.cardId),
+        boardId: board.id,
+        cardId: body.cardId,
         actorId: userId,
         type: "CARD_MOVED",
         message: "moved card to another list",
@@ -184,14 +181,14 @@ export async function PATCH(
       body.listId &&
       !body.cardId
     ) {
-      const bulkOps = body.cardIds.map((cardId, idx) => ({
-        updateOne: {
-          filter: { _id: cardId, listId: body.listId, archived: false },
-          update: { position: (idx + 1) * 1000 },
-        },
-      }));
-
-      await Card.bulkWrite(bulkOps);
+      await prisma.$transaction(
+        body.cardIds.map((cardId, idx) =>
+          prisma.card.update({
+            where: { id: cardId, listId: body.listId },
+            data: { position: (idx + 1) * 1000 },
+          }),
+        ),
+      );
 
       return NextResponse.json({ success: true });
     }
@@ -204,15 +201,10 @@ export async function PATCH(
       if ("assigneeId" in body) updates.assigneeId = body.assigneeId ?? null;
       if ("dueDate" in body) updates.dueDate = body.dueDate ? new Date(body.dueDate) : null;
 
-      const updatedCard = await Card.findOneAndUpdate(
-        { _id: body.cardId, archived: false },
-        updates,
-        { new: true }
-      );
-
-      if (!updatedCard) {
-        return NextResponse.json({ error: "Card not found" }, { status: 404 });
-      }
+      const updatedCard = await prisma.card.update({
+        where: { id: body.cardId },
+        data: updates,
+      });
 
       return NextResponse.json(updatedCard);
     }
@@ -223,4 +215,3 @@ export async function PATCH(
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
-
