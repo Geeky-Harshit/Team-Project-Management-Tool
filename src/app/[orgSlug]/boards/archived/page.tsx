@@ -1,13 +1,13 @@
+import RestoreBoardButton from "@/components/board/restore-board-button";
+import { validateOrgAccess } from "@/lib/auth/server-permissions";
 import connectDB from "@/lib/db";
-import Organization from "@/models/organization/Organization";
 import Board from "@/models/board/Board";
 import List from "@/models/board/List";
 import CardModel from "@/models/card/Card";
-import { validateOrgAccess } from "@/lib/auth/server-permissions";
-import { notFound, redirect } from "next/navigation";
+import Organization from "@/models/organization/Organization";
+import { Archive, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { ArrowLeft, Archive, AlertCircle } from "lucide-react";
-import RestoreBoardButton from "@/components/board/restore-board-button";
+import { notFound, redirect } from "next/navigation";
 
 interface PageProps {
   params: Promise<{ orgSlug: string }>;
@@ -118,7 +118,6 @@ export default async function ArchivedBoardsPage({ params }: PageProps) {
                   <RestoreBoardButton
                     boardId={bId}
                     orgId={org._id.toString()}
-                    boardName={board.name}
                   />
                 </div>
               </div>

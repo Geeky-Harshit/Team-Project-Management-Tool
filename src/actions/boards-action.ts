@@ -79,7 +79,6 @@ export async function archiveBoard(boardId: string, orgId: string) {
 }
 
 export async function restoreBoard(boardId: string, orgId: string) {
-  // Only admins or owners can restore archived boards
   const { user, org } = await validateOrgAccess(orgId, "admin");
 
   await connectDB();
@@ -99,8 +98,8 @@ export async function restoreBoard(boardId: string, orgId: string) {
     message: `restored board "${board.name}"`,
   });
 
-  revalidatePath(`/${org.slug}/boards`);
-  revalidatePath(`/${org.slug}/boards/archived`);
-  console.log(`/${org.slug}/boards`);
-  console.log(`/${org.slug}/boards/archived`);
+  revalidatePath(`/${org.slug}/boards/archived`, "page");
+  revalidatePath(`/${org.slug}/boards`, "page");
+  
+  return { success: true };
 }

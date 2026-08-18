@@ -1,31 +1,23 @@
 "use client";
 
-import { useTransition } from "react";
 import { restoreBoard } from "@/actions/boards-action";
-import { RotateCcw, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { Loader2, RotateCcw } from "lucide-react";
+import { useTransition } from "react";
 
 interface RestoreBoardButtonProps {
   boardId: string;
   orgId: string;
-  boardName: string;
 }
 
 export default function RestoreBoardButton({
   boardId,
   orgId,
-  boardName,
 }: RestoreBoardButtonProps) {
   const [isPending, startTransition] = useTransition();
 
   const handleRestore = () => {
     startTransition(async () => {
-      try {
-        await restoreBoard(boardId, orgId);
-        toast.success(`Board "${boardName}" restored successfully`);
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to restore board");
-      }
+      await restoreBoard(boardId, orgId);
     });
   };
 
