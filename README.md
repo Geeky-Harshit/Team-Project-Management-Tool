@@ -1,6 +1,6 @@
 # Team Management Tool (TMT)
 
-A **multi-tenant Kanban project management application** built with **Next.js 16 App Router**, **MongoDB**, **Better Auth**, and **server-first authorization**.
+A **multi-tenant Kanban project management application** built with **Next.js 16 App Router**, **Prisma ORM 7**, **Neon PostgreSQL**, **Better Auth**, and **server-first authorization**.
 
 TMT enables teams to collaborate within organizations using Kanban boards while providing secure role-based access control, member invitations, activity tracking, and an organization-level dashboard.
 
@@ -11,7 +11,7 @@ TMT enables teams to collaborate within organizations using Kanban boards while 
 ### 🔐 Authentication
 
 - Email & Password authentication
-- Session-based authentication with Better Auth
+- Session-based authentication with Better Auth (PostgreSQL adapter)
 - Protected routes using middleware/proxy
 - Secure server-side session validation
 
@@ -51,12 +51,13 @@ Permissions are enforced **server-side** to ensure users cannot bypass authoriza
 - Create boards
 - Rename boards
 - Archive boards
+- Restore archived boards
 
 ### Lists
 
 - Create lists
 - Rename lists
-- Delete lists
+- Delete lists (with cascade deletion)
 
 ### Cards
 
@@ -82,8 +83,9 @@ Built with **dnd-kit** for smooth Kanban interactions.
 Features include:
 
 - Drag cards across lists
+- Dynamic tilt angle based on drag direction
 - Reorder cards
-- Persistent ordering
+- Persistent ordering via atomic SQL transactions
 
 ---
 
@@ -131,8 +133,8 @@ Major actions are logged automatically, including:
 | UI | React 19 |
 | Styling | Tailwind CSS |
 | Components | shadcn/ui |
-| Database | MongoDB |
-| ODM | Mongoose |
+| Database | PostgreSQL (Neon Serverless) |
+| ORM | Prisma ORM 7 (`@prisma/adapter-neon`) |
 | Authentication | Better Auth |
 | Drag & Drop | dnd-kit |
 | Notifications | Sonner |
@@ -144,138 +146,132 @@ Major actions are logged automatically, including:
 # 📁 Project Structure
 
 ```text
-src
-├── actions
-│   ├── boards-action.ts
-│   ├── cards-action.ts
-│   └── lists-action.ts
-├── app
-│   ├── (auth)
-│   │   ├── sign-in
-│   │   │   └── page.tsx
-│   │   └── sign-up
-│   │       └── page.tsx
-│   ├── [orgSlug]
-│   │   ├── boards
-│   │   │   ├── [boardId]
+├── prisma
+│   ├── schema.prisma
+│   └── migrations/
+├── prisma.config.ts
+├── src
+│   ├── actions
+│   │   ├── boards-action.ts
+│   │   ├── cards-action.ts
+│   │   └── lists-action.ts
+│   ├── app
+│   │   ├── (auth)
+│   │   │   ├── sign-in
+│   │   │   │   └── page.tsx
+│   │   │   └── sign-up
+│   │   │       └── page.tsx
+│   │   ├── [orgSlug]
+│   │   │   ├── boards
+│   │   │   │   ├── [boardId]
+│   │   │   │   │   ├── loading.tsx
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── archived
+│   │   │   │   │   └── page.tsx
 │   │   │   │   ├── loading.tsx
 │   │   │   │   └── page.tsx
-│   │   │   ├── loading.tsx
+│   │   │   ├── error.tsx
+│   │   │   ├── layout.tsx
+│   │   │   ├── members
+│   │   │   │   └── page.tsx
+│   │   │   ├── not-found.tsx
 │   │   │   └── page.tsx
-│   │   ├── error.tsx
-│   │   ├── layout.tsx
-│   │   ├── members
-│   │   │   └── page.tsx
-│   │   ├── not-found.tsx
-│   │   └── page.tsx
-│   ├── api
-│   │   ├── activity
-│   │   │   └── route.ts
-│   │   ├── auth
-│   │   │   └── [...all]
-│   │   │       └── route.ts
-│   │   ├── boards
-│   │   │   └── [id]
-│   │   │       └── cards
-│   │   │           └── route.ts
-│   │   ├── cards
-│   │   │   └── [cardId]
-│   │   │       └── comments
-│   │   │           └── route.ts
-│   │   ├── invites
-│   │   │   ├── [token]
-│   │   │   │   ├── accept
+│   │   ├── api
+│   │   │   ├── activity
+│   │   │   │   └── route.ts
+│   │   │   ├── auth
+│   │   │   │   └── [...all]
+│   │   │   │       └── route.ts
+│   │   │   ├── boards
+│   │   │   │   └── [id]
+│   │   │   │       └── cards
+│   │   │   │           └── route.ts
+│   │   │   ├── cards
+│   │   │   │   └── [cardId]
+│   │   │   │       └── comments
+│   │   │   │           └── route.ts
+│   │   │   ├── invites
+│   │   │   │   ├── [token]
+│   │   │   │   │   ├── accept
+│   │   │   │   │   │   └── route.ts
 │   │   │   │   │   └── route.ts
 │   │   │   │   └── route.ts
-│   │   │   └── route.ts
-│   │   └── orgs
-│   │       └── [slug]
-│   │           └── boards
-│   │               └── route.ts
-│   ├── dashboard
+│   │   │   └── orgs
+│   │   │       └── [slug]
+│   │   │           └── boards
+│   │   │               └── route.ts
+│   │   ├── dashboard
+│   │   │   └── page.tsx
+│   │   ├── error.tsx
+│   │   ├── globals.css
+│   │   ├── invite
+│   │   │   └── page.tsx
+│   │   ├── layout.tsx
+│   │   ├── not-found.tsx
 │   │   └── page.tsx
-│   ├── error.tsx
-│   ├── globals.css
-│   ├── invite
-│   │   └── page.tsx
-│   ├── layout.tsx
-│   ├── not-found.tsx
-│   └── page.tsx
-├── components
-│   ├── board
-│   │   ├── board-header.tsx
-│   │   ├── card-detail-modal.tsx
-│   │   ├── card-item.tsx
-│   │   ├── column-header.tsx
-│   │   └── kanban-board.tsx
-│   ├── create-board-card.tsx
-│   ├── create-card-form.tsx
-│   ├── create-list-form.tsx
-│   ├── dashboard
-│   │   ├── dashboard-stats.tsx
-│   │   ├── organization-form.tsx
-│   │   ├── organization-list.tsx
-│   │   ├── overdue-tasks.tsx
-│   │   ├── workload-breakdown.tsx
-│   │   └── workspace-activity.tsx
-│   ├── invite
-│   │   ├── invite-card.tsx
-│   │   └── invite-error.tsx
-│   ├── members
-│   │   ├── invite-form.tsx
-│   │   ├── member-row.tsx
-│   │   ├── members-client.tsx
-│   │   ├── members-list.tsx
-│   │   └── pending-invites.tsx
-│   ├── navbar.tsx
-│   ├── sidebar.tsx
-│   └── ui
-│       ├── avatar.tsx
-│       ├── button.tsx
-│       ├── card.tsx
-│       ├── dropdown-menu.tsx
-│       ├── input.tsx
-│       ├── label.tsx
-│       └── textarea.tsx
-├── context
-│   └── org-context.tsx
-├── hooks
-│   └── useOrgs.ts
-├── lib
-│   ├── activity-logger.ts
-│   ├── auth
-│   │   ├── auth-client.ts
-│   │   ├── auth.ts
-│   │   ├── permissions.ts
-│   │   └── server-permissions.ts
-│   ├── db.ts
-│   ├── mailer.ts
-│   └── utils.ts
-├── models
-│   ├── activity
-│   │   └── Activity.ts
-│   ├── board
-│   │   ├── Board.ts
-│   │   └── List.ts
-│   ├── card
-│   │   ├── Card.ts
-│   │   ├── CardLabel.ts
-│   │   ├── Comment.ts
-│   │   └── Label.ts
-│   └── organization
-│       ├── Invite.ts
-│       ├── Organization.ts
-│       └── OrganizationMember.ts
-├── proxy.ts
-├── scripts
-│   └── seed.ts
-└── types
-    ├── activity.ts
-    ├── board.ts
-    ├── card.ts
-    ├── index.ts
-    └── organization.ts
-
+│   ├── components
+│   │   ├── board
+│   │   │   ├── board-header.tsx
+│   │   │   ├── card-comments.tsx
+│   │   │   ├── card-detail-modal.tsx
+│   │   │   ├── card-item.tsx
+│   │   │   ├── column-header.tsx
+│   │   │   ├── kanban-board.tsx
+│   │   │   ├── list-column.tsx
+│   │   │   └── restore-board-button.tsx
+│   │   ├── create-board-card.tsx
+│   │   ├── create-card-form.tsx
+│   │   ├── create-list-form.tsx
+│   │   ├── dashboard
+│   │   │   ├── dashboard-stats.tsx
+│   │   │   ├── organization-form.tsx
+│   │   │   ├── organization-list.tsx
+│   │   │   ├── overdue-tasks.tsx
+│   │   │   ├── workload-breakdown.tsx
+│   │   │   └── workspace-activity.tsx
+│   │   ├── invite
+│   │   │   ├── invite-card.tsx
+│   │   │   └── invite-error.tsx
+│   │   ├── members
+│   │   │   ├── invite-form.tsx
+│   │   │   ├── member-row.tsx
+│   │   │   ├── members-client.tsx
+│   │   │   ├── members-list.tsx
+│   │   │   └── pending-invites.tsx
+│   │   ├── navbar.tsx
+│   │   ├── sidebar.tsx
+│   │   └── ui
+│   │       ├── avatar.tsx
+│   │       ├── button.tsx
+│   │       ├── card.tsx
+│   │       ├── dropdown-menu.tsx
+│   │       ├── input.tsx
+│   │       ├── label.tsx
+│   │       └── textarea.tsx
+│   ├── context
+│   │   └── org-context.tsx
+│   ├── generated/prisma
+│   ├── hooks
+│   │   └── useOrgs.ts
+│   ├── lib
+│   │   ├── activity-logger.ts
+│   │   ├── auth
+│   │   │   ├── auth-client.ts
+│   │   │   ├── auth.ts
+│   │   │   ├── permissions.ts
+│   │   │   └── server-permissions.ts
+│   │   ├── mailer.ts
+│   │   ├── prisma.ts
+│   │   └── utils.ts
+│   ├── proxy.ts
+│   ├── scripts
+│   │   └── seed.ts
+│   └── types
+│       ├── activity.ts
+│       ├── board.ts
+│       ├── card.ts
+│       ├── index.ts
+│       └── organization.ts
 ```
 
 ---
@@ -322,7 +318,7 @@ The active organization is managed globally using `OrgContext`.
 ## Prerequisites
 
 - Node.js 20+
-- MongoDB
+- PostgreSQL database (e.g., [Neon DB](https://neon.tech))
 
 ---
 
@@ -345,20 +341,33 @@ npm install
 
 ## Configure Environment Variables
 
-Create a `.env.local` file:
+Create a `.env` file in the root directory:
 
 ```env
-MONGODB_URI=
+DATABASE_URL="postgresql://<user>:<password>@<neon-host>.neon.tech/neondb?sslmode=require"
 
-BETTER_AUTH_SECRET=
+BETTER_AUTH_SECRET="your-better-auth-secret"
 BETTER_AUTH_URL=http://localhost:3000
+NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000
 
-SMTP_HOST=
-SMTP_PORT=
-SMTP_USER=
-SMTP_PASS=
-SMTP_FROM=
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=user@example.com
+SMTP_PASS=password
+SMTP_FROM=noreply@example.com
 ```
+
+---
+
+## Push Schema & Generate Prisma Client
+
+Push the database models to Neon PostgreSQL and generate the typed Prisma Client:
+
+```bash
+npx prisma db push
+npx prisma generate
+```
+
 ---
 
 ## Start Development Server
@@ -401,22 +410,35 @@ npm run start
 npm run lint
 ```
 
+## Prisma Database Management
+
+```bash
+# Push schema changes to the database
+npx prisma db push
+
+# Generate typed client
+npx prisma generate
+
+# Open visual web database browser
+npx prisma studio
+```
+
 ---
 
 # 🌱 Seed Data
 
-The seed script generates realistic demo data.
+The seed script generates realistic demo data in PostgreSQL.
 
 Run:
 
 ```bash
-npx tsx seed.ts
+npx tsx src/scripts/seed.ts
 ```
 
 Seeded data includes:
 
 - 3 Organizations
-- 12 Users
+- 12 Users (Default password: `Password@123`)
 - 5 Boards
 - Multiple Lists
 - 220 Cards
@@ -453,6 +475,7 @@ POST   /api/orgs/[slug]/boards
 - Update card
 - Delete card
 - Reorder cards
+- Drag & Drop across lists
 
 ### Comments
 
@@ -467,13 +490,13 @@ POST    /api/invites
 DELETE  /api/invites
 ```
 
-Validate invite
+Validate invite:
 
 ```
 GET /api/invites/[token]
 ```
 
-Accept invite
+Accept invite:
 
 ```
 POST /api/invites/[token]/accept
@@ -483,4 +506,5 @@ POST /api/invites/[token]/accept
 
 ```
 GET /api/activity
+```
 ```
