@@ -2,13 +2,9 @@
 
 import { logActivity } from "@/lib/activity-logger";
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
-import connectDB from "@/lib/db";
-import Board from "@/models/board/Board";
-import Card from "@/models/card/Card";
-import Comment from "@/models/card/Comment";
+import { prisma } from "@/lib/prisma";
 import { ActivityType } from "@/types";
 import { revalidatePath } from "next/cache";
-import List from "@/models/board/List";
 
 export async function createCard(formData: FormData) {
   const title = formData.get("title") as string;
@@ -22,27 +18,33 @@ export async function createCard(formData: FormData) {
 
   const { user, org } = await validateOrgAccess(orgId, "member");
 
-  await connectDB();
-  const board = await Board.findOne({ _id: boardId, organizationId: org._id });
+  const board = await prisma.board.findFirst({
+    where: { id: boardId, organizationId: org.id },
+  });
   if (!board) throw new Error("Board access denied");
 
-  const maxPositionCard = await Card.findOne({ listId }).sort({ position: -1 });
+  const maxPositionCard = await prisma.card.findFirst({
+    where: { listId },
+    orderBy: { position: "desc" },
+  });
   const position = maxPositionCard ? maxPositionCard.position + 1000 : 1000;
 
-  const card = await Card.create({
-    title,
-    listId,
-    description,
-    assigneeId: assigneeId || undefined,
-    dueDate: dueDate || undefined,
-    position,
-    createdBy: user.id,
+  const card = await prisma.card.create({
+    data: {
+      title,
+      listId,
+      description,
+      assigneeId,
+      dueDate,
+      position,
+      createdBy: user.id,
+    },
   });
 
   await logActivity({
-    organizationId: org._id,
-    boardId: board._id,
-    cardId: card._id,
+    organizationId: org.id,
+    boardId: board.id,
+    cardId: card.id,
     actorId: user.id,
     type: "CARD_CREATED",
     message: `created card "${title}"`,
@@ -50,7 +52,6 @@ export async function createCard(formData: FormData) {
 
   revalidatePath(`/${org.slug}/boards/${boardId}`);
 }
-
 
 export async function updateCardDetails(
   cardId: string,
@@ -65,12 +66,14 @@ export async function updateCardDetails(
 ) {
   const { user, org } = await validateOrgAccess(orgId, "member");
 
-  await connectDB();
-  const board = await Board.findOne({ _id: boardId, organizationId: org._id });
+  const board = await prisma.board.findFirst({
+    where: { id: boardId, organizationId: org.id },
+  });
   if (!board) throw new Error("Board access denied");
 
-  const card = await Card.findOneAndUpdate({ _id: cardId }, updates, {
-    new: true,
+  const card = await prisma.card.update({
+    where: { id: cardId },
+    data: updates,
   });
   if (!card) throw new Error("Card not found");
 
@@ -85,9 +88,9 @@ export async function updateCardDetails(
   }
 
   await logActivity({
-    organizationId: org._id,
-    boardId: board._id,
-    cardId: card._id,
+    organizationId: org.id,
+    boardId: board.id,
+    cardId: card.id,
     actorId: user.id,
     type: activityType,
     message,
@@ -110,26 +113,23 @@ export async function addComment(
     throw new Error("Comment cannot be empty");
   }
 
-  await connectDB();
-
-  const board = await Board.findOne({
-    _id: boardId,
-    organizationId: org._id,
+  const board = await prisma.board.findFirst({
+    where: {
+      id: boardId,
+      organizationId: org.id,
+    },
   });
 
   if (!board) {
     throw new Error("Board access denied");
   }
 
-  const lists = await List.find({
-    boardId: board._id,
-    archived: false,
-  }).select("_id");
-
-  const card = await Card.findOne({
-    _id: cardId,
-    listId: { $in: lists.map((l) => l._id) },
-    archived: false,
+  const card = await prisma.card.findFirst({
+    where: {
+      id: cardId,
+      list: { boardId: board.id, archived: false },
+      archived: false,
+    },
   });
 
   if (!card) {
@@ -137,23 +137,27 @@ export async function addComment(
   }
 
   if (parentId) {
-    const parent = await Comment.findOne({ _id: parentId, cardId });
+    const parent = await prisma.comment.findFirst({
+      where: { id: parentId, cardId },
+    });
     if (!parent) {
       throw new Error("Invalid parent comment");
     }
   }
 
-  const comment = await Comment.create({
-    cardId,
-    authorId: user.id,
-    content: text,
-    parentId: parentId || null,
+  const comment = await prisma.comment.create({
+    data: {
+      cardId,
+      authorId: user.id,
+      content: text,
+      parentId: parentId || null,
+    },
   });
 
   await logActivity({
-    organizationId: org._id,
-    boardId: board._id,
-    cardId: card._id,
+    organizationId: org.id,
+    boardId: board.id,
+    cardId: card.id,
     actorId: user.id,
     type: "COMMENT_ADDED",
     message: `added comment on card "${card.title}"`,
@@ -162,11 +166,11 @@ export async function addComment(
   revalidatePath(`/${org.slug}/boards/${boardId}`);
 
   return {
-    id: comment._id.toString(),
-    cardId: comment.cardId.toString(),
+    id: comment.id,
+    cardId: comment.cardId,
     authorId: comment.authorId,
     content: comment.content,
-    parentId: comment.parentId ? comment.parentId.toString() : null,
+    parentId: comment.parentId,
     createdAt: comment.createdAt.toISOString(),
     updatedAt: comment.updatedAt.toISOString(),
   };
