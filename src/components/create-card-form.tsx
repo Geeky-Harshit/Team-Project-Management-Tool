@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,10 +15,11 @@ export default function CreateCardForm({
   listId: string;
   boardId: string;
 }) {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [loading, setLoading] = useState(false);
-  const { currentOrg } = useOrgs()
+  const { currentOrg } = useOrgs();
 
   const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -32,6 +34,7 @@ export default function CreateCardForm({
       await createCard(formData);
       setTitle("");
       setIsOpen(false);
+      router.refresh();
     } catch (err) {
       console.error(err);
     } finally {

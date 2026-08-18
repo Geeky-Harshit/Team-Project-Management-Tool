@@ -91,6 +91,10 @@ export function KanbanBoard({ initialLists, initialCards, boardId }: KanbanBoard
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    (() => setCards(initialCards))();
+  }, [initialCards]);
+
+  useEffect(() => {
     (() => setMounted(true))();
   }, []);
 

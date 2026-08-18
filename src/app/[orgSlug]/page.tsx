@@ -11,6 +11,7 @@ import { WorkloadBreakdown, WorkloadEntry } from "@/components/dashboard/workloa
 import { WorkspaceActivityFeed } from "@/components/dashboard/workspace-activity";
 import { notFound } from "next/navigation";
 import { Card, Activity } from "@/types";
+import mongoose from "mongoose";
 
 export default async function OrgDashboardPage({
   params,
@@ -25,7 +26,7 @@ export default async function OrgDashboardPage({
 
   await validateOrgAccess(org._id.toString(), "viewer");
 
-  // Single batch database query
+  // Single batch database queries
   const boards = await Board.find({ organizationId: org._id, archived: false });
   const boardIds = boards.map((b) => b._id);
 
@@ -66,14 +67,49 @@ export default async function OrgDashboardPage({
   const now = new Date();
   const overdue = allCards.filter((c) => c.dueDate && new Date(c.dueDate) < now);
 
-  const workloadMap = new Map<string, number>();
+  // Resolve user names & emails for assignees
+  const assigneeIds = Array.from(
+    new Set(allCards.map((c) => c.assigneeId).filter(Boolean))
+  ) as string[];
+
+  const userMap = new Map<string, { name: string; email: string }>();
+  const db = mongoose.connection.db;
+  if (db && assigneeIds.length > 0) {
+    const users = await db
+      .collection("user")
+      .find(
+        { _id: { $in: assigneeIds.map((id) => new mongoose.Types.ObjectId(id)) } },
+      )
+      .toArray();
+
+    users.forEach((u) => {
+      const info = { name: u.name || "User", email: u.email || "" };
+      if (u.id) userMap.set(u.id, info);
+      if (u._id) userMap.set(u._id.toString(), info);
+    });
+  }
+
+  const workloadMap = new Map<string, { name: string; email?: string; count: number }>();
   allCards.forEach((card) => {
-    const key = card.assigneeId || "Unassigned";
-    workloadMap.set(key, (workloadMap.get(key) || 0) + 1);
+    if (!card.assigneeId) {
+      const current = workloadMap.get("unassigned") || { name: "Unassigned", count: 0 };
+      workloadMap.set("unassigned", { ...current, count: current.count + 1 });
+    } else {
+      const user = userMap.get(card.assigneeId);
+      const key = card.assigneeId;
+      const current = workloadMap.get(key) || {
+        name: user?.name || "Unknown Member",
+        email: user?.email,
+        count: 0,
+      };
+      workloadMap.set(key, { ...current, count: current.count + 1 });
+    }
   });
-  const workloadEntries: WorkloadEntry[] = Array.from(workloadMap.entries()).map(([assignee, count]) => ({
-    assignee,
-    count,
+
+  const workloadEntries: WorkloadEntry[] = Array.from(workloadMap.values()).map((entry) => ({
+    assignee: entry.name,
+    email: entry.email,
+    count: entry.count,
   }));
 
   return (

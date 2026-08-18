@@ -14,7 +14,6 @@ export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl;
     const orgId = searchParams.get("orgId");
     const cursor = searchParams.get("cursor");
-    const limit = parseInt(searchParams.get("limit") || "20");
 
     if (!orgId)
       return NextResponse.json({ error: "orgId required" }, { status: 400 });
@@ -36,17 +35,8 @@ export async function GET(request: NextRequest) {
 
     const activities = await Activity.find(query)
       .sort({ createdAt: -1 })
-      .limit(limit + 1);
-
-    const hasNextPage = activities.length > limit;
-    const items = hasNextPage ? activities.slice(0, limit) : activities;
-    const nextCursor = hasNextPage
-      ? items[items.length - 1].createdAt.toISOString()
-      : null;
-
     return NextResponse.json({
-      activities: items,
-      nextCursor,
+      activities
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
