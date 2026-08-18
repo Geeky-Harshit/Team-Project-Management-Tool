@@ -36,7 +36,6 @@ export default async function OrgDashboardPage({
   const rawCards = await CardModel.find({ listId: { $in: listIds }, archived: false });
   const rawActivities = await ActivityModel.find({ organizationId: org._id })
     .sort({ createdAt: -1 })
-    .limit(10);
 
   const allCards: Card[] = rawCards.map((c) => ({
     id: c._id.toString(),
