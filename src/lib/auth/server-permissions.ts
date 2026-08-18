@@ -1,8 +1,7 @@
 import { getSession } from "./auth";
 import { requireRole } from "./permissions";
 import { Role } from "@/types";
-import connectDB from "@/lib/db";
-import Organization from "@/models/organization/Organization";
+import { prisma } from "@/lib/prisma";
 
 export async function validateOrgAccess(orgId: string, minRole: Role) {
   const session = await getSession();
@@ -10,14 +9,16 @@ export async function validateOrgAccess(orgId: string, minRole: Role) {
     throw new Error("Unauthorized");
   }
 
-  await connectDB();
-  const org = await Organization.findOne({ _id:orgId });
+  const org = await prisma.organization.findUnique({
+    where: { id: orgId },
+  });
+
   if (!org) {
     throw new Error("Organization not found");
   }
 
-  const role = await requireRole(session.user.id, org._id.toString(), minRole);
-  
+  const role = await requireRole(session.user.id, org.id, minRole);
+
   return {
     user: session.user,
     org,
