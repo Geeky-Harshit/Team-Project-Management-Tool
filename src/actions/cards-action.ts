@@ -15,6 +15,10 @@ export async function createCard(formData: FormData) {
   const listId = formData.get("listId") as string;
   const boardId = formData.get("boardId") as string;
   const orgId = formData.get("orgId") as string;
+  const description = (formData.get("description") as string) || "";
+  const assigneeId = (formData.get("assigneeId") as string) || null;
+  const dueDateStr = formData.get("dueDate") as string;
+  const dueDate = dueDateStr ? new Date(dueDateStr) : null;
 
   const { user, org } = await validateOrgAccess(orgId, "member");
 
@@ -28,6 +32,9 @@ export async function createCard(formData: FormData) {
   const card = await Card.create({
     title,
     listId,
+    description,
+    assigneeId: assigneeId || undefined,
+    dueDate: dueDate || undefined,
     position,
     createdBy: user.id,
   });
@@ -43,6 +50,7 @@ export async function createCard(formData: FormData) {
 
   revalidatePath(`/${org.slug}/boards/${boardId}`);
 }
+
 
 export async function updateCardDetails(
   cardId: string,

@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Card, List } from "@/types";
 import {
   DndContext,
   DragEndEvent,
@@ -11,13 +10,12 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { ColumnHeader } from "./column-header";
-import { CardItem } from "./card-item";
-import CreateCardForm from "@/components/create-card-form";
-import CreateListForm from "@/components/create-list-form";
-import { CardDetailModal } from "./card-detail-modal";
-import { List, Card } from "@/types";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { ScrollFade } from "../scroll-fade";
+import { CardDetailModal } from "./card-detail-modal";
+import { CardItem } from "./card-item";
+import { ColumnHeader } from "./column-header";
 
 interface KanbanBoardProps {
   initialLists: List[];
@@ -59,7 +57,7 @@ function ListColumn({ list, cards, boardId, onOpenCard, dndEnabled }: ListColumn
         cardsCount={cards.length}
       />
 
-      <ScrollFade maxHeight="max-h-[44vh]" contentClassName="mt-3 p-1 flex flex-col min-h-24">
+      <ScrollFade maxHeight="max-h-[55vh]" contentClassName="mt-3 p-1 flex flex-col min-h-24">
         {dndEnabled ? (
           <SortableContext items={cards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
             <div className="flex flex-col gap-2">
@@ -76,10 +74,6 @@ function ListColumn({ list, cards, boardId, onOpenCard, dndEnabled }: ListColumn
           </div>
         )}
       </ScrollFade>
-
-      <div className="mt-3">
-        <CreateCardForm listId={list.id} boardId={boardId} />
-      </div>
     </div>
   );
 }
@@ -217,8 +211,7 @@ export function KanbanBoard({ initialLists, initialCards, boardId }: KanbanBoard
 
   const boardContent = (
     <div className="flex-1 overflow-x-auto pb-2">
-      <div className="flex h-full min-h-135
-       items-start gap-4">
+      <div className="flex h-full min-h-135 items-start gap-4">
         {initialLists.map((list) => {
           const listCards = cardsByList.get(list.id) || [];
           return (
@@ -232,12 +225,10 @@ export function KanbanBoard({ initialLists, initialCards, boardId }: KanbanBoard
             />
           );
         })}
-        <div className="w-76 shrink-0">
-          <CreateListForm boardId={boardId} />
-        </div>
       </div>
     </div>
   );
+
 
   return (
     <div className="flex h-full min-h-0 flex-col">
