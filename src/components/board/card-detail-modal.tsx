@@ -1,388 +1,202 @@
 "use client";
 
-import { addComment, updateCardDetails } from "@/actions/cards-action";
+import { useEffect, useMemo, useState } from "react";
+import { updateCardDetails } from "@/actions/cards-action";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useOrgs } from "@/hooks/useOrgs";
 import { authClient } from "@/lib/auth/auth-client";
-import { Comment, Card as ICard } from "@/types";
-import { Calendar, CornerDownRight, MessageSquare, User, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { ScrollFade } from "../scroll-fade";
+import { Card as ICard } from "@/types";
+import { Calendar, User, X } from "lucide-react";
+import { toast } from "sonner";
+import { CardComments } from "./card-comments";
 
 interface CardDetailModalProps {
   card: ICard;
   boardId: string;
   onClose: () => void;
+  canEdit?: boolean;
 }
 
-interface OrgMemberOption {
+interface OrgMember {
   id: string;
   name: string;
   email: string;
 }
 
-export function CardDetailModal({ card, boardId, onClose }: CardDetailModalProps) {
+export function CardDetailModal({ card, boardId, onClose, canEdit = true }: CardDetailModalProps) {
   const { currentOrg } = useOrgs();
 
-  const [title, setTitle] = useState(card.title);
-  const [description, setDescription] = useState(card.description || "");
-  const [dueDate, setDueDate] = useState(card.dueDate ? card.dueDate.slice(0, 10) : "");
-  const [assigneeId, setAssigneeId] = useState(card.assigneeId || "");
+  const [formData, setFormData] = useState({
+    title: card.title,
+    description: card.description || "",
+    dueDate: card.dueDate ? card.dueDate.slice(0, 10) : "",
+    assigneeId: card.assigneeId || "",
+  });
 
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [commentsLoading, setCommentsLoading] = useState(true);
-  const [commentsError, setCommentsError] = useState("");
-
-  const [members, setMembers] = useState<OrgMemberOption[]>([]);
+  const [members, setMembers] = useState<OrgMember[]>([]);
   const [membersLoading, setMembersLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
-  const [newComment, setNewComment] = useState("");
-  const [replyToCommentId, setReplyToCommentId] = useState<string | null>(null);
-  const [actionError, setActionError] = useState("");
+  const handleChange = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
-  const [savingDetails, setSavingDetails] = useState(false);
-  const [postingComment, setPostingComment] = useState(false);
-
-  const rootComments = useMemo(
-    () => comments.filter((c) => !c.parentId),
-    [comments],
-  );
-
-  const getReplies = (parentId: string) =>
-    comments.filter((c) => c.parentId === parentId);
-
-  useEffect(() => {
-    let canceled = false;
-
-    async function loadComments() {
-      setCommentsLoading(true);
-      setCommentsError("");
-
-      try {
-        const res = await fetch("/api/cards/" + card.id + "/comments");
-        const data = (await res.json()) as Comment[] | { error?: string };
-
-        if (canceled) return;
-
-        if (!res.ok || !Array.isArray(data)) {
-          const message =
-            !Array.isArray(data) && data.error
-              ? data.error
-              : "Failed to load comments";
-          setCommentsError(message);
-          setComments([]);
-          return;
-        }
-
-        setComments(data);
-      } catch {
-        if (!canceled) {
-          setCommentsError("Failed to load comments");
-          setComments([]);
-        }
-      } finally {
-        if (!canceled) setCommentsLoading(false);
-      }
-    }
-
-    loadComments();
-
-    return () => {
-      canceled = true;
-    };
-  }, [card.id]);
+  const hasChanges = useMemo(() => {
+    return (
+      formData.title.trim() !== card.title.trim() ||
+      formData.description.trim() !== (card.description || "").trim() ||
+      formData.dueDate !== (card.dueDate ? card.dueDate.slice(0, 10) : "") ||
+      formData.assigneeId !== (card.assigneeId || "")
+    );
+  }, [formData, card]);
 
   useEffect(() => {
-    let canceled = false;
-
-    async function loadMembers() {
-      if (!currentOrg) return;
-      setMembersLoading(true);
-
-      try {
-        const res = await authClient.organization.listMembers({
-          query: { organizationId: currentOrg.id },
-        });
-
-        if (canceled) return;
-
-        if (!res.data) {
-          setMembers([]);
-          return;
+    if (!currentOrg) return;
+    setMembersLoading(true);
+    authClient.organization
+      .listMembers({ query: { organizationId: currentOrg.id } })
+      .then((res) => {
+        if (res.data?.members) {
+          setMembers(
+            res.data.members.map((m) => ({
+              id: m.user.id,
+              name: m.user.name || "Unknown",
+              email: m.user.email || "",
+            }))
+          );
         }
-
-        const nextMembers = res.data.members.map((m) => ({
-          id: m.user.id,
-          name: m.user.name || "Unknown",
-          email: m.user.email || "unknown@example.com",
-        }));
-
-        setMembers(nextMembers);
-      } catch {
-        if (!canceled) setMembers([]);
-      } finally {
-        if (!canceled) setMembersLoading(false);
-      }
-    }
-
-    loadMembers();
-
-    return () => {
-      canceled = true;
-    };
+      })
+      .finally(() => setMembersLoading(false));
   }, [currentOrg]);
 
-  const handleSaveDetails = async () => {
-    if (!currentOrg) return;
+  const handleSave = async () => {
+    if (!currentOrg || !canEdit || !hasChanges || !formData.title.trim()) return;
 
-    setActionError("");
-    setSavingDetails(true);
-
+    setError("");
+    setSaving(true);
     try {
       await updateCardDetails(card.id, boardId, currentOrg.id, {
-        title: title.trim(),
-        description: description.trim(),
-        assigneeId: assigneeId || null,
-        dueDate: dueDate ? new Date(dueDate) : null,
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        assigneeId: formData.assigneeId || null,
+        dueDate: formData.dueDate ? new Date(formData.dueDate) : null,
       });
+      toast.success("Card updated successfully");
+      onClose();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to save card details";
-      setActionError(message);
+      setError(err instanceof Error ? err.message : "Failed to save card details");
     } finally {
-      setSavingDetails(false);
+      setSaving(false);
     }
   };
-
-  const handlePostComment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentOrg) return;
-    if (!newComment.trim()) return;
-
-    setActionError("");
-    setPostingComment(true);
-
-    try {
-      const created = await addComment(
-        card.id,
-        boardId,
-        currentOrg.id,
-        newComment,
-        replyToCommentId,
-      );
-
-      const normalized: Comment =
-        "id" in created
-          ? (created as Comment)
-          : {
-            id: (created as { _id: { toString: () => string } })._id.toString(),
-            cardId: card.id,
-            authorId: (created as { authorId: string }).authorId,
-            content: (created as { content: string }).content,
-            parentId: (created as { parentId?: { toString: () => string } | null }).parentId
-              ? (created as { parentId: { toString: () => string } }).parentId.toString()
-              : null,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          };
-
-      setComments((prev) => [...prev, normalized]);
-      setNewComment("");
-      setReplyToCommentId(null);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to post comment";
-      setActionError(message);
-    } finally {
-      setPostingComment(false);
-    }
-  };
-
-  const renderComment = (comm: Comment, isReply = false) => (
-    <div
-      key={comm.id}
-      className={
-        isReply
-          ? "ml-8 mt-2 bg-gray-50 border p-2.5 rounded-md text-xs"
-          : "bg-gray-50 border p-3 rounded-lg text-xs"
-      }
-    >
-      <div className="flex justify-between items-center text-[10px] text-gray-400 font-semibold">
-        <span>User: {comm.authorId.slice(-6)}</span>
-        <span suppressHydrationWarning>
-          {new Date(comm.createdAt).toLocaleString("en-IN")}
-        </span>
-      </div>
-
-      <p className="text-gray-700 font-medium mt-1">{comm.content}</p>
-
-      {!isReply && (
-        <button
-          type="button"
-          onClick={() => setReplyToCommentId(comm.id)}
-          className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
-        >
-          <CornerDownRight className="h-3 w-3" />
-          Reply
-        </button>
-      )}
-
-      {!isReply &&
-        getReplies(comm.id).map((reply) => renderComment(reply, true))}
-    </div>
-  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 font-sans">
       <div className="bg-white rounded-xl max-w-3xl w-full flex flex-col max-h-[88vh] border border-gray-200 shadow-2xl overflow-hidden">
+        {/* Modal Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <Input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            value={formData.title}
+            onChange={(e) => handleChange("title", e.target.value)}
             className="text-lg font-bold border-none shadow-none focus-visible:ring-0 p-0 h-8 font-sans"
-            disabled={savingDetails}
+            disabled={saving || !canEdit}
           />
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="h-8 w-8 text-gray-400"
-          >
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 text-gray-400">
             <X className="h-4 w-4" />
           </Button>
         </div>
 
+        {/* Modal Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {actionError && (
+          {error && (
             <div className="text-xs text-destructive bg-destructive/10 p-2.5 rounded-md font-medium">
-              {actionError}
+              {error}
             </div>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Left: Description & Comments Component */}
             <div className="md:col-span-2 space-y-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-gray-700">Description</label>
                 <Textarea
-                  placeholder="Add a more detailed description..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder={canEdit ? "Add a more detailed description..." : "No description provided."}
+                  value={formData.description}
+                  onChange={(e) => handleChange("description", e.target.value)}
                   className="text-xs h-28 focus-visible:ring-primary font-sans"
-                  disabled={savingDetails}
+                  disabled={saving || !canEdit}
                 />
               </div>
 
-              <div className="space-y-4 pt-4 border-t border-gray-100">
-                <h3 className="text-sm font-semibold flex items-center gap-2 text-gray-800">
-                  <MessageSquare className="h-4 w-4" />
-                  Comments
-                </h3>
-
-                {replyToCommentId && (
-                  <div className="text-[11px] px-2.5 py-1.5 rounded bg-primary/10 text-primary font-semibold inline-flex items-center gap-2">
-                    Replying to comment
-                    <button
-                      type="button"
-                      className="underline"
-                      onClick={() => setReplyToCommentId(null)}
-                    >
-                      cancel
-                    </button>
-                  </div>
-                )}
-
-                <form onSubmit={handlePostComment} className="flex gap-2">
-                  <Input
-                    placeholder={
-                      replyToCommentId
-                        ? "Write a reply..."
-                        : "Write a comment..."
-                    }
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    className="text-xs h-9 focus-visible:ring-primary font-sans"
-                    disabled={postingComment || savingDetails}
-                  />
-                  <Button
-                    type="submit"
-                    size="sm"
-                    disabled={
-                      postingComment ||
-                      savingDetails ||
-                      !newComment.trim()
-                    }
-                    className="bg-primary hover:bg-primary/90 text-xs font-sans"
-                  >
-                    {postingComment ? "Posting..." : "Post"}
-                  </Button>
-                </form>
-
-                {commentsLoading ? (
-                  <p className="text-xs text-gray-500">Loading comments...</p>
-                ) : commentsError ? (
-                  <p className="text-xs text-destructive">{commentsError}</p>
-                ) : (
-                  <ScrollFade maxHeight="max-h-[20rem]" contentClassName="space-y-3 px-4 py-3">
-                    <div className="space-y-3 pt-2">
-                      {rootComments.length === 0 ? (
-                        <p className="text-xs text-gray-500">No comments yet.</p>
-                      ) : (
-                        rootComments.map((comm) => renderComment(comm))
-                      )}
-                    </div>
-                  </ScrollFade>
-                )}
-              </div>
+              {currentOrg && (
+                <CardComments
+                  cardId={card.id}
+                  boardId={boardId}
+                  orgId={currentOrg.id}
+                  canEdit={canEdit}
+                />
+              )}
             </div>
 
+            {/* Right: Metadata Sidebar */}
             <div className="space-y-4 bg-gray-50/50 p-4 rounded-xl border border-gray-100 h-fit">
-              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                Metadata
-              </h4>
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Metadata</h4>
 
               <div className="space-y-1">
                 <label className="text-[10px] font-semibold text-gray-500 flex items-center gap-1">
-                  <User className="h-3.5 w-3.5" />
-                  Assignee
+                  <User className="h-3.5 w-3.5" /> Assignee
                 </label>
-                <select
-                  value={assigneeId}
-                  onChange={(e) => setAssigneeId(e.target.value)}
-                  className="w-full text-xs border border-gray-200 rounded-md p-2 bg-white focus:outline-none focus:ring-1 focus:ring-primary"
-                  disabled={savingDetails || membersLoading}
-                >
-                  <option value="">Unassigned</option>
-                  {members.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name} ({m.email})
-                    </option>
-                  ))}
-                </select>
+                {
+                  canEdit
+                    ? (<select
+                      value={formData.assigneeId}
+                      onChange={(e) => handleChange("assigneeId", e.target.value)}
+                      className="w-full text-xs border border-gray-200 rounded-md p-2 bg-white focus:outline-none focus:ring-1 focus:ring-primary"
+                      disabled={saving || membersLoading}
+                    >
+                      <option value="">Unassigned</option>
+                      {members.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name} ({m.email})
+                        </option>
+                      ))}
+                    </select>)
+                    : <div className="w-full text-xs border border-gray-200 rounded-md p-2 bg-white focus:outline-none focus:ring-1 focus:ring-primary">
+                      {
+                        formData.assigneeId
+                          ? <span>{members.find((m) => m.id === formData.assigneeId)?.name}</span>
+                          : <span>Unassigned</span>
+                      }
+                    </div>
+                }
               </div>
 
               <div className="space-y-1">
                 <label className="text-[10px] font-semibold text-gray-500 flex items-center gap-1">
-                  <Calendar className="h-3.5 w-3.5" />
-                  Due Date
+                  <Calendar className="h-3.5 w-3.5" /> Due Date
                 </label>
                 <Input
                   type="date"
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
+                  value={formData.dueDate}
+                  onChange={(e) => handleChange("dueDate", e.target.value)}
                   className="text-xs h-8 bg-white focus-visible:ring-primary font-sans"
-                  disabled={savingDetails}
+                  disabled={saving || !canEdit}
                 />
               </div>
 
-              <Button
-                type="button"
-                onClick={handleSaveDetails}
-                disabled={savingDetails || postingComment}
-                className="w-full text-xs"
-              >
-                {savingDetails ? "Saving..." : "Save Changes"}
-              </Button>
+              {
+                canEdit && <Button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={!canEdit || !hasChanges || saving || !formData.title.trim()}
+                  className="w-full text-xs font-semibold"
+                >
+                  {saving ? "Saving..." : "Save Changes"}
+                </Button>
+              }
             </div>
           </div>
         </div>

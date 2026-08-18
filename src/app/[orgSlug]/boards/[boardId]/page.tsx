@@ -20,7 +20,8 @@ export default async function BoardPage({ params }: PageProps) {
   const org = await Organization.findOne({ slug: orgSlug });
   if (!org) notFound();
 
-  await validateOrgAccess(org._id.toString(), "viewer");
+  const { role } = await validateOrgAccess(org._id.toString(), "viewer");
+  const canEdit = role === "owner" || role === "admin" || role === "member";
 
   const board = await Board.findOne({
     _id: boardId,
@@ -68,7 +69,7 @@ export default async function BoardPage({ params }: PageProps) {
   return (
     <div className="mx-auto flex h-full w-full max-w-7xl flex-col gap-6 p-4 md:p-6">
       <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-        <BoardHeader boardId={boardId} initialName={board.name} />
+        <BoardHeader boardId={boardId} initialName={board.name} canEdit={canEdit} />
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Lists</p>
@@ -90,7 +91,7 @@ export default async function BoardPage({ params }: PageProps) {
       </section>
 
       <section className="min-h-0 flex-1 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm md:p-5">
-        <KanbanBoard initialLists={lists} initialCards={cards} boardId={boardId} />
+        <KanbanBoard initialLists={lists} initialCards={cards} boardId={boardId} canEdit={canEdit} />
       </section>
     </div>
   );

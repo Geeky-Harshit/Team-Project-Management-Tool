@@ -12,9 +12,10 @@ import { toast } from "sonner";
 interface BoardHeaderProps {
   boardId: string;
   initialName: string;
+  canEdit?: boolean;
 }
 
-export function BoardHeader({ boardId, initialName }: BoardHeaderProps) {
+export function BoardHeader({ boardId, initialName, canEdit = true }: BoardHeaderProps) {
   const { currentOrg } = useOrgs();
   const [name, setName] = useState(initialName);
   const [isEditing, setIsEditing] = useState(false);
@@ -77,7 +78,7 @@ export function BoardHeader({ boardId, initialName }: BoardHeaderProps) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 pb-4 border-b border-gray-200 font-sans">
       <div className="flex items-center gap-3">
-        {isEditing ? (
+        {canEdit && isEditing ? (
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -90,71 +91,73 @@ export function BoardHeader({ boardId, initialName }: BoardHeaderProps) {
         ) : (
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-gray-900">{name}</h1>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-gray-400 hover:text-gray-600"
-              onClick={() => setIsEditing(true)}
-            >
-              <Edit2 className="h-3.5 w-3.5" />
-            </Button>
+            {canEdit && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-gray-400 hover:text-gray-600"
+                onClick={() => setIsEditing(true)}
+              >
+                <Edit2 className="h-3.5 w-3.5" />
+              </Button>
+            )}
           </div>
         )}
       </div>
-
-      <div className="flex items-center gap-2">
-        {isAddingList ? (
-          <form onSubmit={handleCreateList} className="flex items-center gap-1.5">
-            <Input
-              autoFocus
-              placeholder="List name..."
-              value={newListName}
-              onChange={(e) => setNewListName(e.target.value)}
-              className="h-8 text-xs w-40 bg-white focus-visible:ring-primary"
-              disabled={listLoading}
-              required
-            />
+      {canEdit && (
+        <div className="flex items-center gap-2">
+          {isAddingList ? (
+            <form onSubmit={handleCreateList} className="flex items-center gap-1.5">
+              <Input
+                autoFocus
+                placeholder="List name..."
+                value={newListName}
+                onChange={(e) => setNewListName(e.target.value)}
+                className="h-8 text-xs w-40 bg-white focus-visible:ring-primary"
+                disabled={listLoading}
+                required
+              />
+              <Button
+                type="submit"
+                size="sm"
+                disabled={listLoading || !newListName.trim()}
+                className="h-8 text-xs px-3 bg-primary hover:bg-primary/90"
+              >
+                {listLoading ? "Adding..." : "Add"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsAddingList(false)}
+                className="h-8 w-8 text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </form>
+          ) : (
             <Button
-              type="submit"
+              variant="outline"
               size="sm"
-              disabled={listLoading || !newListName.trim()}
-              className="h-8 text-xs px-3 bg-primary hover:bg-primary/90"
+              onClick={() => setIsAddingList(true)}
+              className="text-xs font-semibold gap-1.5 h-8 border-gray-300 text-gray-700 hover:bg-gray-50 shadow-sm"
             >
-              {listLoading ? "Adding..." : "Add"}
+              <Plus className="h-3.5 w-3.5 text-primary" />
+              Add List
             </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsAddingList(false)}
-              className="h-8 w-8 text-gray-400 hover:text-gray-600"
-            >
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          </form>
-        ) : (
+          )}
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            onClick={() => setIsAddingList(true)}
-            className="text-xs font-semibold gap-1.5 h-8 border-gray-300 text-gray-700 hover:bg-gray-50 shadow-sm"
+            onClick={handleArchive}
+            disabled={loading}
+            className="text-gray-500 hover:text-red-600 hover:bg-red-50 text-xs font-semibold gap-1.5 h-8 font-sans"
           >
-            <Plus className="h-3.5 w-3.5 text-primary" />
-            Add List
+            <Archive className="h-3.5 w-3.5" />
+            Archive Board
           </Button>
-        )}
-
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleArchive}
-          disabled={loading}
-          className="text-gray-500 hover:text-red-600 hover:bg-red-50 text-xs font-semibold gap-1.5 h-8 font-sans"
-        >
-          <Archive className="h-3.5 w-3.5" />
-          Archive Board
-        </Button>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

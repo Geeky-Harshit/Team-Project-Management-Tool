@@ -28,13 +28,14 @@ interface KanbanBoardProps {
   initialLists: List[];
   initialCards: Card[];
   boardId: string;
+  canEdit?: boolean;
 }
 
 function sortByPosition(cards: Card[]) {
   return [...cards].sort((a, b) => a.position - b.position);
 }
 
-export function KanbanBoard({ initialLists, initialCards, boardId }: KanbanBoardProps) {
+export function KanbanBoard({ initialLists, initialCards, boardId, canEdit = true }: KanbanBoardProps) {
   const router = useRouter();
   const { currentOrg } = useOrgs();
   const [cards, setCards] = useState<Card[]>(initialCards);
@@ -260,44 +261,45 @@ export function KanbanBoard({ initialLists, initialCards, boardId }: KanbanBoard
           <p className="mt-1 text-xs text-gray-500 max-w-sm">
             Organize your workflow by creating lists like To Do, In Progress, and Done.
           </p>
-
-          {isAddingList ? (
-            <form onSubmit={handleCreateList} className="mt-5 flex items-center gap-2">
-              <Input
-                autoFocus
-                placeholder="Enter list title..."
-                value={newListName}
-                onChange={(e) => setNewListName(e.target.value)}
-                className="h-9 text-xs w-48 bg-white focus-visible:ring-primary"
-                disabled={listLoading}
-                required
-              />
+          {canEdit && (
+            isAddingList ? (
+              <form onSubmit={handleCreateList} className="mt-5 flex items-center gap-2">
+                <Input
+                  autoFocus
+                  placeholder="Enter list title..."
+                  value={newListName}
+                  onChange={(e) => setNewListName(e.target.value)}
+                  className="h-9 text-xs w-48 bg-white focus-visible:ring-primary"
+                  disabled={listLoading}
+                  required
+                />
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={listLoading || !newListName.trim()}
+                  className="h-9 text-xs px-3.5 bg-primary hover:bg-primary/90"
+                >
+                  {listLoading ? "Adding..." : "Add"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsAddingList(false)}
+                  className="h-9 w-9 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </form>
+            ) : (
               <Button
-                type="submit"
-                size="sm"
-                disabled={listLoading || !newListName.trim()}
-                className="h-9 text-xs px-3.5 bg-primary hover:bg-primary/90"
+                onClick={() => setIsAddingList(true)}
+                className="mt-5 bg-primary hover:bg-primary/90 text-xs font-semibold gap-1.5 shadow-sm px-4"
               >
-                {listLoading ? "Adding..." : "Add"}
+                <Plus className="h-4 w-4" />
+                Add First List
               </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsAddingList(false)}
-                className="h-9 w-9 text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </form>
-          ) : (
-            <Button
-              onClick={() => setIsAddingList(true)}
-              className="mt-5 bg-primary hover:bg-primary/90 text-xs font-semibold gap-1.5 shadow-sm px-4"
-            >
-              <Plus className="h-4 w-4" />
-              Add First List
-            </Button>
+            )
           )}
         </div>
       ) : (
@@ -311,7 +313,8 @@ export function KanbanBoard({ initialLists, initialCards, boardId }: KanbanBoard
                 cards={listCards}
                 boardId={boardId}
                 onOpenCard={openCard}
-                dndEnabled={mounted}
+                dndEnabled={mounted && canEdit}
+                canEdit={canEdit}
               />
             );
           })}
@@ -335,7 +338,7 @@ export function KanbanBoard({ initialLists, initialCards, boardId }: KanbanBoard
             {activeDragCard ? (
               <CardItem
                 card={activeDragCard}
-                onClick={() => {}}
+                onClick={() => { }}
                 dndEnabled={false}
                 isOverlay
                 rotation={dragRotation}
@@ -351,6 +354,7 @@ export function KanbanBoard({ initialLists, initialCards, boardId }: KanbanBoard
         <CardDetailModal
           card={activeCardModal}
           boardId={boardId}
+          canEdit={canEdit}
           onClose={() => {
             setActiveCardModal(null);
             router.refresh();

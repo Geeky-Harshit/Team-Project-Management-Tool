@@ -13,6 +13,7 @@ interface ColumnHeaderProps {
   boardId: string;
   initialName: string;
   cardsCount: number;
+  canEdit?: boolean;
 }
 
 export function ColumnHeader({
@@ -20,6 +21,7 @@ export function ColumnHeader({
   boardId,
   initialName,
   cardsCount,
+  canEdit = true,
 }: ColumnHeaderProps) {
   const { currentOrg } = useOrgs();
   const [name, setName] = useState(initialName);
@@ -57,7 +59,7 @@ export function ColumnHeader({
   return (
     <>
       <div className="flex items-center justify-between px-1 shrink-0 font-sans">
-        {isEditing ? (
+        {canEdit && isEditing ? (
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -70,9 +72,9 @@ export function ColumnHeader({
         ) : (
           <div className="flex items-center gap-2 min-w-0">
             <span
-              onClick={() => setIsEditing(true)}
-              className="font-semibold text-gray-700 text-sm cursor-pointer hover:text-black truncate"
-              title="Click to rename"
+              onClick={() => canEdit && setIsEditing(true)}
+              className={`font-semibold text-gray-700 text-sm truncate ${canEdit ? "cursor-pointer hover:text-black" : ""}`}
+              title={canEdit ? "Click to rename" : undefined}
             >
               {name}
             </span>
@@ -81,32 +83,31 @@ export function ColumnHeader({
             </span>
           </div>
         )}
-
-        <div className="flex items-center gap-0.5 shrink-0">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsAddCardOpen(true)}
-            className="h-7 w-7 text-gray-500 hover:text-primary hover:bg-orange-50"
-            title="Add Card"
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleDelete}
-            disabled={loading}
-            className="h-7 w-7 text-gray-400 hover:text-red-500 hover:bg-red-50"
-            title="Delete List"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        </div>
+        {canEdit && (
+          <div className="flex items-center gap-0.5 shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsAddCardOpen(true)}
+              className="h-7 w-7 text-gray-500 hover:text-primary hover:bg-orange-50"
+              title="Add Card"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleDelete}
+              disabled={loading}
+              className="h-7 w-7 text-gray-400 hover:text-red-500 hover:bg-red-50"
+              title="Delete List"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
       </div>
-
-      {isAddCardOpen && (
+      {canEdit && isAddCardOpen && (
         <CreateCardModal
           listId={listId}
           listName={name}
