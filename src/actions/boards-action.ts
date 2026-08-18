@@ -5,6 +5,7 @@ import { validateOrgAccess } from "@/lib/auth/server-permissions";
 import connectDB from "@/lib/db";
 import Board from "@/models/board/Board";
 import { revalidatePath } from "next/cache";
+import {redirect} from "next/navigation"
 
 export async function createBoard(formData: FormData) {
   
@@ -74,6 +75,7 @@ export async function archiveBoard(boardId: string, orgId: string) {
   });
 
   revalidatePath(`/${org.slug}/boards`);
+  redirect(`/${org.slug}/boards`)
 }
 
 export async function restoreBoard(boardId: string, orgId: string) {
@@ -99,4 +101,6 @@ export async function restoreBoard(boardId: string, orgId: string) {
 
   revalidatePath(`/${org.slug}/boards`);
   revalidatePath(`/${org.slug}/boards/archived`);
+  console.log(`/${org.slug}/boards`);
+  console.log(`/${org.slug}/boards/archived`);
 }
