@@ -24,5 +24,5 @@ export interface Activity {
   type: ActivityType;
   message: string;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 }

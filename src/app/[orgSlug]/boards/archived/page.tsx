@@ -1,10 +1,6 @@
 import RestoreBoardButton from "@/components/board/restore-board-button";
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
-import connectDB from "@/lib/db";
-import Board from "@/models/board/Board";
-import List from "@/models/board/List";
-import CardModel from "@/models/card/Card";
-import Organization from "@/models/organization/Organization";
+import { prisma } from "@/lib/prisma";
 import { Archive, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -16,40 +12,37 @@ interface PageProps {
 export default async function ArchivedBoardsPage({ params }: PageProps) {
   const { orgSlug } = await params;
 
-  await connectDB();
-  const org = await Organization.findOne({ slug: orgSlug });
+  const org = await prisma.organization.findUnique({
+    where: { slug: orgSlug },
+  });
   if (!org) notFound();
 
-  // Validate owner/admin access; redirect if insufficient permissions
-  let role;
   try {
-    const access = await validateOrgAccess(org._id.toString(), "admin");
-    role = access.role;
+    await validateOrgAccess(org.id, "admin");
   } catch {
     redirect(`/${orgSlug}/boards`);
   }
 
-  // Fetch archived boards
-  const archivedBoards = await Board.find({
-    organizationId: org._id,
-    archived: true,
-  }).sort({ updatedAt: -1 });
-
-  const boardIds = archivedBoards.map((b) => b._id);
-  const lists = await List.find({ boardId: { $in: boardIds } }).select("_id boardId");
-  const listIds = lists.map((l) => l._id);
-  const cards = await CardModel.find({ listId: { $in: listIds } }).select("_id listId");
-
-  const boardToListIds = new Map<string, Set<string>>();
-  for (const l of lists) {
-    const boardId = l.boardId.toString();
-    if (!boardToListIds.has(boardId)) boardToListIds.set(boardId, new Set<string>());
-    boardToListIds.get(boardId)!.add(l._id.toString());
-  }
+  const archivedBoards = await prisma.board.findMany({
+    where: {
+      organizationId: org.id,
+      archived: true,
+    },
+    orderBy: { updatedAt: "desc" },
+    include: {
+      lists: {
+        select: {
+          id: true,
+          cards: {
+            select: { id: true },
+          },
+        },
+      },
+    },
+  });
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-6 md:p-8">
-      {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <Link
@@ -66,7 +59,6 @@ export default async function ArchivedBoardsPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* Board List */}
       {archivedBoards.length === 0 ? (
         <div className="flex min-h-[300px] flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center shadow-sm">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400">
@@ -88,13 +80,12 @@ export default async function ArchivedBoardsPage({ params }: PageProps) {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {archivedBoards.map((board) => {
-            const bId = board._id.toString();
-            const listIdSet = boardToListIds.get(bId) ?? new Set<string>();
-            const taskCount = cards.filter((c) => listIdSet.has(c.listId.toString())).length;
+            const listCount = board.lists.length;
+            const taskCount = board.lists.reduce((acc, l) => acc + l.cards.length, 0);
 
             return (
               <div
-                key={bId}
+                key={board.id}
                 className="flex flex-col justify-between rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
               >
                 <div>
@@ -108,7 +99,7 @@ export default async function ArchivedBoardsPage({ params }: PageProps) {
                   </div>
                   <h3 className="mt-3 text-base font-semibold text-gray-900">{board.name}</h3>
                   <div className="mt-2 flex gap-2 text-xs text-gray-500">
-                    <span>{listIdSet.size} lists</span>
+                    <span>{listCount} lists</span>
                     <span>•</span>
                     <span>{taskCount} tasks</span>
                   </div>
@@ -116,8 +107,8 @@ export default async function ArchivedBoardsPage({ params }: PageProps) {
 
                 <div className="mt-5 flex items-center justify-end border-t border-gray-100 pt-4">
                   <RestoreBoardButton
-                    boardId={bId}
-                    orgId={org._id.toString()}
+                    boardId={board.id}
+                    orgId={org.id}
                   />
                 </div>
               </div>

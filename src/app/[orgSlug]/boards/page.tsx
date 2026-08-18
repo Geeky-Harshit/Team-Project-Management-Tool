@@ -1,8 +1,4 @@
-import connectDB from "@/lib/db";
-import Organization from "@/models/organization/Organization";
-import Board from "@/models/board/Board";
-import List from "@/models/board/List";
-import CardModel from "@/models/card/Card";
+import { prisma } from "@/lib/prisma";
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -17,54 +13,50 @@ interface PageProps {
 export default async function BoardsPage({ params }: PageProps) {
   const { orgSlug } = await params;
 
-  await connectDB();
-  const org = await Organization.findOne({ slug: orgSlug });
+  const org = await prisma.organization.findUnique({
+    where: { slug: orgSlug },
+  });
   if (!org) notFound();
 
-  const { role } = await validateOrgAccess(org._id.toString(), "viewer");
+  const { role } = await validateOrgAccess(org.id, "viewer");
   const canManage = role === "owner" || role === "admin";
   const canCreate = role === "owner" || role === "admin" || role === "member";
 
-  const boards = await Board.find({
-    organizationId: org._id,
-    archived: false,
-  }).sort({ createdAt: -1 });
+  const boards = await prisma.board.findMany({
+    where: {
+      organizationId: org.id,
+      archived: false,
+    },
+    orderBy: { createdAt: "desc" },
+    include: {
+      lists: {
+        where: { archived: false },
+        select: {
+          id: true,
+          cards: {
+            where: { archived: false },
+            select: { id: true, dueDate: true },
+          },
+        },
+      },
+    },
+  });
 
-  const boardIds = boards.map((b) => b._id);
-  const lists = await List.find({ boardId: { $in: boardIds }, archived: false }).select("_id boardId");
-  const listIds = lists.map((l) => l._id);
-
-  const cards = await CardModel.find({
-    listId: { $in: listIds },
-    archived: false,
-  }).select("_id listId dueDate");
-
-  const boardToListIds = new Map<string, Set<string>>();
-  for (const l of lists) {
-    const boardId = l.boardId.toString();
-    if (!boardToListIds.has(boardId)) boardToListIds.set(boardId, new Set<string>());
-    boardToListIds.get(boardId)!.add(l._id.toString());
-  }
-
+  const now = new Date();
   const boardStats = boards.map((board) => {
-    const bId = board._id.toString();
-    const listIdSet = boardToListIds.get(bId) ?? new Set<string>();
-
-    let cardCount = 0;
+    let totalCards = 0;
     let overdueCount = 0;
-    const now = new Date();
 
-    for (const card of cards) {
-      if (!listIdSet.has(card.listId.toString())) continue;
-      cardCount += 1;
-      if (card.dueDate && new Date(card.dueDate) < now) overdueCount += 1;
-    }
+    board.lists.forEach((list) => {
+      totalCards += list.cards.length;
+      overdueCount += list.cards.filter((c) => c.dueDate && new Date(c.dueDate) < now).length;
+    });
 
     return {
-      boardId: bId,
-      cards: cardCount,
+      boardId: board.id,
+      cards: totalCards,
       overdue: overdueCount,
-      lists: listIdSet.size,
+      lists: board.lists.length,
     };
   });
 
@@ -114,12 +106,11 @@ export default async function BoardsPage({ params }: PageProps) {
           )}
         </div>
 
-
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {boards.map((board) => {
-            const stats = boardStats.find((s) => s.boardId === board._id.toString());
+            const stats = boardStats.find((s) => s.boardId === board.id);
             return (
-              <Link key={board._id.toString()} href={"/" + orgSlug + "/boards/" + board._id.toString()}>
+              <Link key={board.id} href={`/${orgSlug}/boards/${board.id}`}>
                 <Card className="group h-44 cursor-pointer border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
                   <div className="flex h-full flex-col justify-between">
                     <div>
@@ -146,7 +137,7 @@ export default async function BoardsPage({ params }: PageProps) {
             );
           })}
 
-          {canCreate && <CreateBoardCard organizationId={org._id.toString()} />}
+          {canCreate && <CreateBoardCard organizationId={org.id} />}
         </div>
       </section>
     </div>
