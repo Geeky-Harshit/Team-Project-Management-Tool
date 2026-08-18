@@ -2,7 +2,7 @@
 
 import { Card as ICard } from "@/types";
 import { Card } from "@/components/ui/card";
-import { Calendar, GripVertical } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -10,9 +10,17 @@ interface CardItemProps {
   card: ICard;
   onClick: () => void;
   dndEnabled?: boolean;
+  isOverlay?: boolean;
+  rotation?: number;
 }
 
-export function CardItem({ card, onClick, dndEnabled = true }: CardItemProps) {
+export function CardItem({
+  card,
+  onClick,
+  dndEnabled = true,
+  isOverlay = false,
+  rotation = 0,
+}: CardItemProps) {
   const isOverdue = card.dueDate ? new Date(card.dueDate) < new Date() : false;
 
   const sortable = useSortable({
@@ -25,33 +33,35 @@ export function CardItem({ card, onClick, dndEnabled = true }: CardItemProps) {
     disabled: !dndEnabled,
   });
 
-  const style = dndEnabled
+  const style = isOverlay
     ? {
-      transform: CSS.Transform.toString(sortable.transform),
-      transition: sortable.transition,
-      opacity: sortable.isDragging ? 0.45 : 1,
+      transform: `rotate(${rotation}deg) scale(1.05)`,
+      transition: "transform 150ms ease",
     }
-    : undefined;
+    : dndEnabled
+      ? {
+        transform: CSS.Transform.toString(sortable.transform),
+        transition: sortable.transition,
+        opacity: sortable.isDragging ? 0.3 : 1,
+      }
+      : undefined;
 
   return (
     <Card
       ref={dndEnabled ? sortable.setNodeRef : undefined}
       style={style}
       onClick={onClick}
-      className="p-3 h-fit min-h-24 bg-white hover:border-primary cursor-pointer border-gray-200 shadow-xs text-xs font-medium text-gray-800 transition duration-100 flex flex-col gap-2 font-sans select-none"
+      {...(dndEnabled ? sortable.attributes : {})}
+      {...(dndEnabled ? sortable.listeners : {})}
+      className={
+        "p-3 h-fit min-h-20 bg-white border-gray-200 shadow-xs text-xs font-medium text-gray-800 flex flex-col justify-between gap-2 font-sans select-none " +
+        (isOverlay
+          ? "cursor-grabbing shadow-xl ring-2 ring-primary/40 border-primary"
+          : "cursor-grab active:cursor-grabbing hover:border-primary/60 transition duration-100")
+      }
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="leading-5">{card.title}</span>
-        <button
-          type="button"
-          aria-label="Drag card"
-          onClick={(e) => e.stopPropagation()}
-          className="shrink-0 rounded p-0.5 text-gray-400 hover:text-gray-600"
-          {...(dndEnabled ? sortable.attributes : {})}
-          {...(dndEnabled ? sortable.listeners : {})}
-        >
-          <GripVertical className="h-3.5 w-3.5" />
-        </button>
+        <span className="leading-5 font-semibold text-gray-800">{card.title}</span>
       </div>
 
       {(card.dueDate || card.assigneeId) && (
