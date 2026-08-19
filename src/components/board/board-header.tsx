@@ -239,14 +239,8 @@ export function BoardHeader({
 
               {overflowCount > 0 && (
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
-                      title={`${overflowCount} more members`}
-                      className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-2 border-white bg-gray-100 text-[11px] font-medium text-gray-600 shadow-xs transition-transform hover:scale-105 hover:bg-gray-200 focus:outline-none"
-                    >
-                      +{overflowCount}
-                    </button>
+                  <DropdownMenuTrigger className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-2 border-white bg-gray-100 text-[11px] font-medium text-gray-600 shadow-xs transition-transform hover:scale-105 hover:bg-gray-200 focus:outline-none">
+                    +{overflowCount}
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-48 p-1">
                     {overflowMembers.map((member) => {
