@@ -29,13 +29,22 @@ interface KanbanBoardProps {
   initialCards: Card[];
   boardId: string;
   canEdit?: boolean;
+  selectedAssigneeId?: string | null;
+  searchQuery?: string;
 }
 
 function sortByPosition(cards: Card[]) {
   return [...cards].sort((a, b) => a.position - b.position);
 }
 
-export function KanbanBoard({ initialLists, initialCards, boardId, canEdit = true }: KanbanBoardProps) {
+export function KanbanBoard({
+  initialLists,
+  initialCards,
+  boardId,
+  canEdit = true,
+  selectedAssigneeId = null,
+  searchQuery = "",
+}: KanbanBoardProps) {
   const router = useRouter();
   const { currentOrg } = useOrgs();
   const [cards, setCards] = useState<Card[]>(initialCards);
@@ -50,21 +59,37 @@ export function KanbanBoard({ initialLists, initialCards, boardId, canEdit = tru
   const [listLoading, setListLoading] = useState(false);
 
   useEffect(() => {
-    (() => setCards(initialCards))();
+    setCards(initialCards);
   }, [initialCards]);
 
   useEffect(() => {
-    (() => setMounted(true))();
+    setMounted(true);
   }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
 
+  // Filter cards by selected assignee AND search query before grouping into columns
   const cardsByList = useMemo(() => {
     const map = new Map<string, Card[]>();
     for (const list of initialLists) map.set(list.id, []);
-    for (const card of cards) {
+
+    const filteredCards = cards.filter((card) => {
+      const matchesAssignee = selectedAssigneeId
+        ? card.assigneeId === selectedAssigneeId
+        : true;
+
+      const query = searchQuery.trim().toLowerCase();
+      const matchesSearch = query
+        ? card.title.toLowerCase().includes(query) ||
+          card.description?.toLowerCase().includes(query)
+        : true;
+
+      return matchesAssignee && matchesSearch;
+    });
+
+    for (const card of filteredCards) {
       const arr = map.get(card.listId);
       if (arr) arr.push(card);
     }
@@ -72,7 +97,7 @@ export function KanbanBoard({ initialLists, initialCards, boardId, canEdit = tru
       map.set(key, sortByPosition(arr));
     }
     return map;
-  }, [cards, initialLists]);
+  }, [cards, initialLists, selectedAssigneeId, searchQuery]);
 
   const openCard = (card: Card) => setActiveCardModal(card);
 
@@ -127,13 +152,10 @@ export function KanbanBoard({ initialLists, initialCards, boardId, canEdit = tru
     const targetIndex = initialLists.findIndex((l) => l.id === targetListId);
 
     if (targetIndex > sourceIndex) {
-      // Dragging to the RIGHT
       setDragRotation(3);
     } else if (targetIndex < sourceIndex) {
-      // Dragging to the LEFT
       setDragRotation(-3);
     } else {
-      // Over starting list -> NO rotation
       setDragRotation(0);
     }
   };
@@ -261,8 +283,8 @@ export function KanbanBoard({ initialLists, initialCards, boardId, canEdit = tru
           <p className="mt-1 text-xs text-gray-500 max-w-sm">
             Organize your workflow by creating lists like To Do, In Progress, and Done.
           </p>
-          {canEdit && (
-            isAddingList ? (
+          {canEdit &&
+            (isAddingList ? (
               <form onSubmit={handleCreateList} className="mt-5 flex items-center gap-2">
                 <Input
                   autoFocus
@@ -299,8 +321,7 @@ export function KanbanBoard({ initialLists, initialCards, boardId, canEdit = tru
                 <Plus className="h-4 w-4" />
                 Add First List
               </Button>
-            )
-          )}
+            ))}
         </div>
       ) : (
         <div className="flex h-full min-h-135 items-start gap-4">
@@ -338,7 +359,7 @@ export function KanbanBoard({ initialLists, initialCards, boardId, canEdit = tru
             {activeDragCard ? (
               <CardItem
                 card={activeDragCard}
-                onClick={() => { }}
+                onClick={() => {}}
                 dndEnabled={false}
                 isOverlay
                 rotation={dragRotation}
