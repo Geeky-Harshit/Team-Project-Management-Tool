@@ -9,6 +9,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Archive, Edit2, Plus, Search, X } from "lucide-react";
 import { useOrgs } from "@/hooks/useOrgs";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export interface Member {
   id: string;
@@ -99,7 +105,8 @@ export function BoardHeader({
   // Jira displays up to 4 avatars before showing an overflow counter
   const maxVisibleAvatars = 4;
   const visibleMembers = members.slice(0, maxVisibleAvatars);
-  const overflowCount = members.length - maxVisibleAvatars;
+  const overflowMembers = members.slice(maxVisibleAvatars);
+  const overflowCount = overflowMembers.length;
 
   return (
     <div className="flex flex-col gap-4 shrink-0 pb-4 border-b border-gray-200 font-sans">
@@ -231,12 +238,39 @@ export function BoardHeader({
               })}
 
               {overflowCount > 0 && (
-                <div
-                  title={`${overflowCount} more members`}
-                  className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-gray-100 text-[11px] font-medium text-gray-600 shadow-xs"
-                >
-                  +{overflowCount}
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      title={`${overflowCount} more members`}
+                      className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-2 border-white bg-gray-100 text-[11px] font-medium text-gray-600 shadow-xs transition-transform hover:scale-105 hover:bg-gray-200 focus:outline-none"
+                    >
+                      +{overflowCount}
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-48 p-1">
+                    {overflowMembers.map((member) => {
+                      const isSelected = selectedAssigneeId === member.id;
+                      return (
+                        <DropdownMenuItem
+                          key={member.id}
+                          onClick={() => onSelectAssignee?.(isSelected ? null : member.id)}
+                          className={`flex items-center gap-2.5 cursor-pointer rounded-md px-2 py-1.5 text-xs ${
+                            isSelected ? "bg-blue-50 font-semibold text-blue-700" : ""
+                          }`}
+                        >
+                          <Avatar className="h-6 w-6">
+                            <AvatarImage src={member.image || undefined} alt={member.name} />
+                            <AvatarFallback className="text-[10px] bg-blue-100 text-blue-700 font-bold">
+                              {member.name ? member.name.slice(0, 2).toUpperCase() : "U"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="truncate">{member.name}</span>
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
             </div>
 
