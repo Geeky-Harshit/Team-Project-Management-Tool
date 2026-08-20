@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createBoard } from "@/actions/boards-action";
+import { showActivityToast } from "@/lib/show-activity-toast";
+
 
 export default function CreateBoardCard({ organizationId }: { organizationId: string }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -20,9 +22,14 @@ export default function CreateBoardCard({ organizationId }: { organizationId: st
       const formData = new FormData();
       formData.append("name", name);
       formData.append("organizationId", organizationId);
-      await createBoard(formData);
-      setName("");
-      setIsOpen(false);
+      const result = await createBoard(formData);
+
+      if (result.success) {
+        showActivityToast("BOARD_CREATED");
+
+        setName("");
+        setIsOpen(false);
+      }
     } catch (err) {
       console.error(err);
     } finally {

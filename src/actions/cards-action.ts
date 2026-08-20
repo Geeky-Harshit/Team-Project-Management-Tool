@@ -51,6 +51,9 @@ export async function createCard(formData: FormData) {
   });
 
   revalidatePath(`/${org.slug}/boards/${boardId}`);
+  return {
+    success: true,
+  };
 }
 
 export async function updateCardDetails(
@@ -97,6 +100,9 @@ export async function updateCardDetails(
   });
 
   revalidatePath(`/${org.slug}/boards/${boardId}`);
+  return {
+    success: true,
+  };
 }
 
 export async function addComment(

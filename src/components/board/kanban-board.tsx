@@ -222,6 +222,7 @@ export function KanbanBoard({ initialLists, initialCards, boardId, canEdit = tru
         sourceListId,
         sourceCardIds: sourceWithPosition.map((c) => c.id),
       });
+      toast.success("Card moved successfully");
     } catch {
       setCards(backup);
       toast.error("Failed to move card to target list");

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, Trash2 } from "lucide-react";
 import { useOrgs } from "@/hooks/useOrgs";
 import { CreateCardModal } from "./create-card-modal";
+import { toast } from "sonner";
 
 interface ColumnHeaderProps {
   listId: string;
@@ -38,6 +39,7 @@ export function ColumnHeader({
     try {
       await renameList(listId, boardId, currentOrg.id, name);
       setIsEditing(false);
+      toast.success("list renamed");
     } catch (err) {
       console.error(err);
     } finally {
@@ -50,6 +52,7 @@ export function ColumnHeader({
     setLoading(true);
     try {
       await deleteList(listId, boardId, currentOrg.id);
+      toast.success("list deleted");
     } catch (err) {
       console.error(err);
       setLoading(false);

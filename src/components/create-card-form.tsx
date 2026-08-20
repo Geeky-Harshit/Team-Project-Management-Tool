@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createCard } from "@/actions/cards-action";
 import { useOrgs } from "@/hooks/useOrgs";
+import { showActivityToast } from "@/lib/show-activity-toast";
 
 export default function CreateCardForm({
   listId,
@@ -31,9 +32,15 @@ export default function CreateCardForm({
       formData.append("listId", listId);
       formData.append("boardId", boardId);
       formData.append("orgId", currentOrg!.id);
-      await createCard(formData);
-      setTitle("");
-      setIsOpen(false);
+      
+      const result = await createCard(formData);
+      if (result.success) {
+              showActivityToast("CARD_CREATED");
+      
+              setTitle("");
+              setIsOpen(false);
+      }
+    
       router.refresh();
     } catch (err) {
       console.error(err);

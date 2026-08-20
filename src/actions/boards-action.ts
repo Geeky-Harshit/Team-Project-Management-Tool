@@ -28,6 +28,9 @@ export async function createBoard(formData: FormData) {
   });
 
   revalidatePath(`/${org.slug}/boards`);
+  return {
+    success: true,
+  };
 }
 
 export async function renameBoard(boardId: string, orgId: string, newName: string) {
@@ -49,6 +52,9 @@ export async function renameBoard(boardId: string, orgId: string, newName: strin
   });
 
   revalidatePath(`/${org.slug}/boards`);
+  return {
+    success: true,
+  };
 }
 
 export async function archiveBoard(boardId: string, orgId: string) {
