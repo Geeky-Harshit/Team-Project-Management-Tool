@@ -1,16 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { updateCardDetails } from "@/actions/cards-action";
+import { deleteCard, updateCardDetails } from "@/actions/cards-action";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useOrgs } from "@/hooks/useOrgs";
 import { authClient } from "@/lib/auth/auth-client";
 import { Card as ICard } from "@/types";
-import { Calendar, User, X } from "lucide-react";
+import { Calendar, Trash2, User, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CardComments } from "./card-comments";
+
 
 interface CardDetailModalProps {
   card: ICard;
@@ -39,6 +40,21 @@ export function CardDetailModal({ card, boardId, onClose, canEdit = true }: Card
   const [membersLoading, setMembersLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!currentOrg || !canEdit) return;
+    if (!confirm(`Are you sure you want to delete "${card.title}"?`)) return;
+    setDeleting(true);
+    try {
+      await deleteCard(card.id, boardId, currentOrg.id);
+      toast.success("Card deleted successfully");
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete card");
+      setDeleting(false);
+    }
+  };
 
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -104,9 +120,23 @@ export function CardDetailModal({ card, boardId, onClose, canEdit = true }: Card
             className="text-lg font-bold border-none shadow-none focus-visible:ring-0 p-0 h-8 font-sans"
             disabled={saving || !canEdit}
           />
-          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 text-gray-400">
-            <X className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            {canEdit && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleDelete}
+                disabled={deleting || saving}
+                className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50"
+                title="Delete Card"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+            <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 text-gray-400">
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         {/* Modal Content */}
