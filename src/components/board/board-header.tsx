@@ -9,6 +9,7 @@ import { Archive, Edit2, Plus, X } from "lucide-react";
 import { useOrgs } from "@/hooks/useOrgs";
 import { toast } from "sonner";
 import { showActivityToast } from "@/lib/show-activity-toast";
+import { useRouter } from "next/navigation";
 
 
 interface BoardHeaderProps {
@@ -29,6 +30,8 @@ export function BoardHeader({ boardId, initialName, canEdit = true, isAdmin = fa
   const [newListName, setNewListName] = useState("");
   const [listLoading, setListLoading] = useState(false);
 
+  const router=useRouter()
+
   const handleRename = async () => {
     if (!name.trim() || name === initialName || !currentOrg) {
       setIsEditing(false);
@@ -37,34 +40,34 @@ export function BoardHeader({ boardId, initialName, canEdit = true, isAdmin = fa
     setLoading(true);
     try {
       const result = await renameBoard(boardId, currentOrg.id, name);
-      if(result.success){
+      if (result.success) {
         showActivityToast("BOARD_RENAMED");
       }
       setIsEditing(false);
     } catch (err) {
       console.error(err);
-      toast.success("error");
+      toast.error("error");
     } finally {
       setLoading(false);
     }
   };
 
   const handleArchive = async () => {
-  if (!confirm("Archive this board?") || !currentOrg) return;
+    if (!confirm("Archive this board?") || !currentOrg) return;
 
-  setLoading(true);
+    setLoading(true);
 
-  try {
-    await archiveBoard(boardId, currentOrg.id);
-
-    showActivityToast("BOARD_ARCHIVED");
-  } catch (err) {
-    console.error("Archive failed:", err);
-    toast.error("Failed to archive board");
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      await archiveBoard(boardId, currentOrg.id);
+      showActivityToast("BOARD_ARCHIVED");
+      router.replace(`/${currentOrg.slug}/boards`)
+    } catch (err) {
+      console.error("Archive failed:", err);
+      toast.error("Failed to archive board");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCreateList = async (e: React.FormEvent) => {
     e.preventDefault();
