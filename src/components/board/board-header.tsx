@@ -8,6 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Archive, Edit2, Plus, X } from "lucide-react";
 import { useOrgs } from "@/hooks/useOrgs";
 import { toast } from "sonner";
+import { showActivityToast } from "@/lib/show-activity-toast";
+import { useRouter } from "next/navigation";
+
 
 interface BoardHeaderProps {
   boardId: string;
@@ -27,6 +30,8 @@ export function BoardHeader({ boardId, initialName, canEdit = true, isAdmin = fa
   const [newListName, setNewListName] = useState("");
   const [listLoading, setListLoading] = useState(false);
 
+  const router=useRouter()
+
   const handleRename = async () => {
     if (!name.trim() || name === initialName || !currentOrg) {
       setIsEditing(false);
@@ -34,10 +39,14 @@ export function BoardHeader({ boardId, initialName, canEdit = true, isAdmin = fa
     }
     setLoading(true);
     try {
-      await renameBoard(boardId, currentOrg.id, name);
+      const result = await renameBoard(boardId, currentOrg.id, name);
+      if (result.success) {
+        showActivityToast("BOARD_RENAMED");
+      }
       setIsEditing(false);
     } catch (err) {
       console.error(err);
+      toast.error("error");
     } finally {
       setLoading(false);
     }
@@ -45,11 +54,17 @@ export function BoardHeader({ boardId, initialName, canEdit = true, isAdmin = fa
 
   const handleArchive = async () => {
     if (!confirm("Archive this board?") || !currentOrg) return;
+
     setLoading(true);
+
     try {
       await archiveBoard(boardId, currentOrg.id);
+      showActivityToast("BOARD_ARCHIVED");
+      router.replace(`/${currentOrg.slug}/boards`)
     } catch (err) {
-      console.error(err);
+      console.error("Archive failed:", err);
+      toast.error("Failed to archive board");
+    } finally {
       setLoading(false);
     }
   };

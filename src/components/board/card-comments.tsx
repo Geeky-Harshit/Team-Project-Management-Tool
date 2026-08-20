@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Comment } from "@/types";
 import { CornerDownRight, MessageSquare } from "lucide-react";
 import { ScrollFade } from "../scroll-fade";
+import { toast } from "sonner";
 
 interface CardCommentsProps {
   cardId: string;
@@ -82,6 +83,7 @@ export function CardComments({ cardId, boardId, orgId, canEdit = true }: CardCom
       setComments((prev) => [...prev, normalized]);
       setNewComment("");
       setReplyToId(null);
+      toast.success("comment added");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to post comment");
     } finally {

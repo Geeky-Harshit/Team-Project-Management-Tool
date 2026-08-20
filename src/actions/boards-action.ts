@@ -4,7 +4,6 @@ import { logActivity } from "@/lib/activity-logger";
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 export async function createBoard(formData: FormData) {
   const orgId = formData.get("organizationId") as string;
@@ -28,9 +27,16 @@ export async function createBoard(formData: FormData) {
   });
 
   revalidatePath(`/${org.slug}/boards`);
+  return {
+    success: true,
+  };
 }
 
-export async function renameBoard(boardId: string, orgId: string, newName: string) {
+export async function renameBoard(
+  boardId: string,
+  orgId: string,
+  newName: string,
+) {
   const { user, org } = await validateOrgAccess(orgId, "member");
 
   const board = await prisma.board.update({
@@ -49,6 +55,9 @@ export async function renameBoard(boardId: string, orgId: string, newName: strin
   });
 
   revalidatePath(`/${org.slug}/boards`);
+  return {
+    success: true,
+  };
 }
 
 export async function archiveBoard(boardId: string, orgId: string) {
@@ -70,7 +79,7 @@ export async function archiveBoard(boardId: string, orgId: string) {
   });
 
   revalidatePath(`/${org.slug}/boards`);
-  redirect(`/${org.slug}/boards`);
+  return { success: true };
 }
 
 export async function restoreBoard(boardId: string, orgId: string) {
