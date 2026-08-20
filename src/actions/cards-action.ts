@@ -175,3 +175,27 @@ export async function addComment(
     updatedAt: comment.updatedAt.toISOString(),
   };
 }
+
+export async function deleteCard(cardId: string, boardId: string, orgId: string) {
+  const { user, org } = await validateOrgAccess(orgId, "member");
+
+  const board = await prisma.board.findFirst({
+    where: { id: boardId, organizationId: org.id },
+  });
+  if (!board) throw new Error("Board access denied");
+
+  const card = await prisma.card.delete({
+    where: { id: cardId },
+  });
+  if (!card) throw new Error("Card not found");
+
+  await logActivity({
+    organizationId: org.id,
+    boardId: board.id,
+    actorId: user.id,
+    type: "CARD_DELETED",
+    message: `deleted card "${card.title}"`,
+  });
+
+  revalidatePath(`/${org.slug}/boards/${boardId}`);
+}
