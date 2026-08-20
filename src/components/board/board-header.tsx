@@ -13,9 +13,10 @@ interface BoardHeaderProps {
   boardId: string;
   initialName: string;
   canEdit?: boolean;
+  isAdmin?: boolean;
 }
 
-export function BoardHeader({ boardId, initialName, canEdit = true }: BoardHeaderProps) {
+export function BoardHeader({ boardId, initialName, canEdit = true, isAdmin = false }: BoardHeaderProps) {
   const { currentOrg } = useOrgs();
   const [name, setName] = useState(initialName);
   const [isEditing, setIsEditing] = useState(false);
@@ -146,16 +147,18 @@ export function BoardHeader({ boardId, initialName, canEdit = true }: BoardHeade
               Add List
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleArchive}
-            disabled={loading}
-            className="text-gray-500 hover:text-red-600 hover:bg-red-50 text-xs font-semibold gap-1.5 h-8 font-sans"
-          >
-            <Archive className="h-3.5 w-3.5" />
-            Archive Board
-          </Button>
+          {isAdmin && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleArchive}
+              disabled={loading}
+              className="text-gray-500 hover:text-red-600 hover:bg-red-50 text-xs font-semibold gap-1.5 h-8 font-sans"
+            >
+              <Archive className="h-3.5 w-3.5" />
+              Archive Board
+            </Button>
+          )}
         </div>
       )}
     </div>

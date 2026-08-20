@@ -19,6 +19,7 @@ export default async function BoardPage({ params }: PageProps) {
 
   const { role } = await validateOrgAccess(org.id, "viewer");
   const canEdit = role === "owner" || role === "admin" || role === "member";
+  const isAdmin = role === "owner" || role === "admin";
 
   const board = await prisma.board.findFirst({
     where: {
@@ -76,7 +77,7 @@ export default async function BoardPage({ params }: PageProps) {
   return (
     <div className="mx-auto flex h-full w-full max-w-7xl flex-col gap-6 p-4 md:p-6">
       <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-        <BoardHeader boardId={boardId} initialName={board.name} canEdit={canEdit} />
+        <BoardHeader boardId={boardId} initialName={board.name} canEdit={canEdit} isAdmin={isAdmin} />
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Lists</p>
