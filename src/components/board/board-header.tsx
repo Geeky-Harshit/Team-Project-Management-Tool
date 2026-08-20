@@ -108,7 +108,7 @@ export function BoardHeader({
     }
   };
 
-  // Move clicked/selected member to the top
+  // Reorder clicked/selected member to the top position
   const sortedMembers = useMemo(() => {
     if (!selectedAssigneeId) return members;
     return [...members].sort((a, b) => {
@@ -124,7 +124,7 @@ export function BoardHeader({
   const overflowCount = overflowMembers.length;
 
   return (
-    <TooltipProvider delayDuration={150}>
+    <TooltipProvider>
       <div className="flex flex-col gap-4 shrink-0 pb-4 border-b border-gray-200 font-sans">
         {/* Top Row: Board Title & Action Buttons */}
         <div className="flex items-center justify-between gap-3">
@@ -212,9 +212,8 @@ export function BoardHeader({
           )}
         </div>
 
-        {/* Bottom Row: Jira-Style Filter Bar (Search + Avatars) */}
+        {/* Bottom Row: Search + Avatars */}
         <div className="flex items-center gap-3">
-          {/* Search Input */}
           <div className="relative w-48 sm:w-64">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
@@ -225,7 +224,6 @@ export function BoardHeader({
             />
           </div>
 
-          {/* User Avatars Stack */}
           {sortedMembers.length > 0 && (
             <div className="flex items-center gap-1">
               <div className="flex items-center -space-x-2">
@@ -233,23 +231,21 @@ export function BoardHeader({
                   const isSelected = selectedAssigneeId === member.id;
                   return (
                     <Tooltip key={member.id}>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          onClick={() => onSelectAssignee?.(isSelected ? null : member.id)}
-                          className={`relative rounded-full transition-all focus:outline-none ${
-                            isSelected
-                              ? "ring-2 ring-blue-600 ring-offset-2 z-20 scale-105"
-                              : "hover:z-10 hover:scale-105"
-                          }`}
-                        >
-                          <Avatar className="h-8 w-8 border-2 border-white shadow-xs">
-                            <AvatarImage src={member.image || undefined} alt={member.name} />
-                            <AvatarFallback className="text-[11px] bg-blue-100 text-blue-700 font-bold">
-                              {member.name ? member.name.slice(0, 2).toUpperCase() : "U"}
-                            </AvatarFallback>
-                          </Avatar>
-                        </button>
+                      <TooltipTrigger
+                        type="button"
+                        onClick={() => onSelectAssignee?.(isSelected ? null : member.id)}
+                        className={`relative rounded-full transition-all focus:outline-none ${
+                          isSelected
+                            ? "ring-2 ring-blue-600 ring-offset-2 z-20 scale-105"
+                            : "hover:z-10 hover:scale-105"
+                        }`}
+                      >
+                        <Avatar className="h-8 w-8 border-2 border-white shadow-xs">
+                          <AvatarImage src={member.image || undefined} alt={member.name} />
+                          <AvatarFallback className="text-[11px] bg-blue-100 text-blue-700 font-bold">
+                            {member.name ? member.name.slice(0, 2).toUpperCase() : "U"}
+                          </AvatarFallback>
+                        </Avatar>
                       </TooltipTrigger>
                       <TooltipContent side="bottom" className="text-xs">
                         {member.name}
