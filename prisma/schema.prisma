@@ -99,6 +99,8 @@ model Member {
   role           String
   createdAt      DateTime     @default(now())
 
+  @@unique([organizationId, userId])
+  @@index([userId])
   @@map("member")
 }
 
@@ -113,6 +115,8 @@ model Invitation {
   inviterId      String
   user           User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
 
+  @@index([organizationId, status])
+  @@index([email])
   @@map("invitation")
 }
 
@@ -185,6 +189,7 @@ model Comment {
   updatedAt DateTime  @updatedAt
 
   @@index([cardId])
+  @@index([parentId])
   @@map("comment")
 }
 
