@@ -140,7 +140,7 @@ export default function MembersClient({
           <PendingInvites
             invites={invites}
             onRemoveInvite={handleRemoveInvite}
-            removingToken={removingInviteToken}
+            removingInvite={removingInviteToken}
           />
         </div>
 

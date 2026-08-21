@@ -7,13 +7,13 @@ import { Invite } from "@/types";
 interface PendingInvitesProps {
   invites: Invite[];
   onRemoveInvite: (token: string) => Promise<void> | void;
-  removingToken?: string | null;
+  removingInvite?: string | null;
 }
 
 export function PendingInvites({
   invites,
   onRemoveInvite,
-  removingToken = null,
+  removingInvite = null,
 }: PendingInvitesProps) {
   if (invites.length === 0) return null;
 
@@ -26,9 +26,9 @@ export function PendingInvites({
 
       <CardContent className="divide-y divide-gray-100">
         {invites.map((invite) => {
-          const isRemoving = removingToken === invite.token;
+          const isRemoving = removingInvite === invite.id;
           return (
-            <div key={invite.token || invite.id} className="flex items-center justify-between py-3 font-sans gap-3">
+            <div key={invite.id} className="flex items-center justify-between py-3 font-sans gap-3">
               <div className="flex flex-col min-w-0">
                 <span className="text-sm font-semibold text-gray-900 truncate">{invite.email}</span>
                 <span className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">
@@ -46,7 +46,7 @@ export function PendingInvites({
                   variant="outline"
                   size="sm"
                   disabled={isRemoving}
-                  onClick={() => onRemoveInvite(invite.token)}
+                  onClick={() => onRemoveInvite(invite.id)}
                   className="h-7 text-xs"
                 >
                   {isRemoving ? "Removing..." : "Remove"}

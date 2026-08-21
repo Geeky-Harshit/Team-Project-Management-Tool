@@ -22,7 +22,6 @@ export interface Invite {
   id: string;
   organizationId: string;
   email: string;
-  token?: string;
   role: Role;
   invitedBy?: string;
   status?: string;
