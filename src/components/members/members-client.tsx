@@ -28,7 +28,7 @@ export default function MembersClient({
         query: { organizationId: orgId },
       });
       if (res.data) {
-        const typed: MemberWithUser[] = (res.data.members).map((m) => ({
+        const typed: MemberWithUser[] = res.data.members.map((m) => ({
           id: m.id,
           role: m.role as Role,
           createdAt: m.createdAt,
@@ -59,10 +59,47 @@ export default function MembersClient({
   }, [orgId]);
 
   useEffect(() => {
-    if (orgId) {
-      (() => Promise.all([fetchMembers(), fetchInvites()]))();
+    if (!orgId) return;
+    let isMounted = true;
+
+    async function loadMembersAndInvites() {
+      try {
+        const [membersRes, invitesRes] = await Promise.all([
+          authClient.organization.listMembers({ query: { organizationId: orgId } }),
+          fetch(`/api/invites?organizationId=${orgId}`).then((r) => (r.ok ? r.json() : [])),
+        ]);
+
+        if (!isMounted) return;
+
+        if (membersRes.data?.members) {
+          const typed: MemberWithUser[] = membersRes.data.members.map((m) => ({
+            id: m.id,
+            role: m.role as Role,
+            createdAt: m.createdAt,
+            user: {
+              id: m.user.id,
+              name: m.user.name,
+              email: m.user.email,
+              image: m.user.image ?? null,
+            },
+          }));
+          setMembers(typed);
+        }
+
+        if (Array.isArray(invitesRes)) {
+          setInvites(invitesRes as Invite[]);
+        }
+      } catch (err) {
+        console.error("Failed to load members or invites", err);
+      }
     }
-  }, [orgId, fetchMembers, fetchInvites]);
+
+    loadMembersAndInvites();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [orgId]);
 
   const handleRemoveMember = async (memberId: string) => {
     if (!confirm("Are you sure you want to remove this member?")) return;
@@ -74,7 +111,7 @@ export default function MembersClient({
       if (res.error) {
         alert(res.error.message || "Failed to remove member");
       } else {
-        fetchMembers();
+        await fetchMembers();
       }
     } catch (err) {
       console.error(err);
@@ -91,7 +128,7 @@ export default function MembersClient({
       if (res.error) {
         alert(res.error.message || "Failed to update role");
       } else {
-        fetchMembers();
+        await fetchMembers();
       }
     } catch (err) {
       console.error(err);

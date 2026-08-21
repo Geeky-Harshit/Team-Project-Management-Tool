@@ -47,10 +47,27 @@ export function OrgProvider({
   }, []);
 
   useEffect(() => {
-    if (userId) {
-      (() => refreshOrgs())();
+    if (!userId) return;
+    let isMounted = true;
+
+    async function loadOrgs() {
+      try {
+        const response = await authClient.organization.list();
+        if (isMounted && response?.data) {
+          setOrgs(response.data as Organization[]);
+        }
+      } catch (err) {
+        console.error("Failed to load organizations", err);
+      }
     }
-  }, [userId, refreshOrgs]);
+
+    loadOrgs();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [userId]);
+
 
   // Optimize: Use the server-provided org if client list is still loading
   const currentOrg = orgs.find((o) => o.slug === orgSlug) || initialCurrentOrg;
