@@ -30,7 +30,7 @@ export function WorkspaceActivityFeed({ activities }: WorkspaceActivityFeedProps
     setScrollTop(currentScrollTop);
     setViewportHeight(clientHeight || 400);
 
-  }, [totalHeight]);
+  }, []);
 
   useEffect(() => {
     updateScrollState();
