@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
 import { notFound } from "next/navigation";
-import { BoardView } from "@/components/board/boardview";
+import { BoardView } from "@/components/board/board-view";
 import { Member } from "@/components/board/board-header";
 import { List as IList, Card as ICard } from "@/types";
 
@@ -107,6 +107,7 @@ export default async function BoardPage({ params }: PageProps) {
       members={boardMembers}
       orgName={org.name}
       overdueCount={overdueCount}
+      isAdmin={isAdmin}
     />
   );
 }

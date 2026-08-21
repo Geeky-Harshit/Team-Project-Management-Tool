@@ -14,6 +14,7 @@ interface BoardViewProps {
   members: Member[];
   orgName: string;
   overdueCount: number;
+  isAdmin?: boolean 
 }
 
 export function BoardView({
@@ -25,6 +26,7 @@ export function BoardView({
   members,
   orgName,
   overdueCount,
+  isAdmin
 }: BoardViewProps) {
   const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,6 +38,7 @@ export function BoardView({
           boardId={boardId}
           initialName={boardName}
           canEdit={canEdit}
+          isAdmin={isAdmin}
           members={members}
           selectedAssigneeId={selectedAssigneeId}
           onSelectAssignee={setSelectedAssigneeId}
