@@ -38,6 +38,7 @@ export default async function OrgDashboardPage({
 
   const rawActivities = await prisma.activity.findMany({
     where: { organizationId: org.id },
+    take: 30,
     orderBy: { createdAt: "desc" },
   });
 
@@ -127,7 +128,7 @@ export default async function OrgDashboardPage({
           <OverdueTasksList tasks={overdue} />
           <WorkloadBreakdown entries={workloadEntries} />
         </div>
-        <WorkspaceActivityFeed activities={activities} />
+        <WorkspaceActivityFeed initialActivities={activities} orgId={org.id} />
       </div>
     </div>
   );

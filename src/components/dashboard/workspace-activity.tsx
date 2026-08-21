@@ -2,35 +2,73 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity } from "@/types";
-import { Activity as ActivityIcon } from "lucide-react";
+import { Activity as ActivityIcon, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ScrollFade } from "../scroll-fade";
 
 interface WorkspaceActivityFeedProps {
-  activities: Activity[];
+  initialActivities: Activity[];
+  orgId: string;
 }
 
-const ITEM_HEIGHT = 56; // Estimated item height in pixels
-const OVERSCAN = 5;     // Extra items to render above and below viewport
+const ITEM_HEIGHT = 56;
+const OVERSCAN = 5;
 
-export function WorkspaceActivityFeed({ activities }: WorkspaceActivityFeedProps) {
+export function WorkspaceActivityFeed({
+  initialActivities = [],
+  orgId,
+}: WorkspaceActivityFeedProps) {
+  const [activities, setActivities] = useState<Activity[]>(initialActivities);
+  const [cursor, setCursor] = useState<string | null>(
+    initialActivities && initialActivities.length >= 30
+      ? initialActivities[initialActivities.length - 1]?.createdAt
+      : null
+  );
+  const [hasMore, setHasMore] = useState(
+    Boolean(initialActivities && initialActivities.length >= 30)
+  );
+  const [loadingMore, setLoadingMore] = useState(false);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(400);
 
-  const totalHeight = activities.length * ITEM_HEIGHT;
+  const totalHeight = (activities?.length || 0) * ITEM_HEIGHT;
 
-  const updateScrollState = useCallback(() => {
+  const loadMore = useCallback(async () => {
+    if (!cursor || loadingMore || !hasMore) return;
+    setLoadingMore(true);
+
+    try {
+      const res = await fetch(`/api/activity?orgId=${orgId}&cursor=${encodeURIComponent(cursor)}&limit=20`);
+      if (res.ok) {
+        const data = await res.json();
+        setActivities((prev) => [...prev, ...data.activities]);
+        setCursor(data.nextCursor);
+        setHasMore(data.hasMore);
+      }
+    } catch (err) {
+      console.error("Failed to load more activities:", err);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [cursor, loadingMore, hasMore, orgId]);
+    const updateScrollState = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
 
     const currentScrollTop = el.scrollTop;
     const clientHeight = el.clientHeight;
+    const scrollHeight = el.scrollHeight;
 
     setScrollTop(currentScrollTop);
     setViewportHeight(clientHeight || 400);
 
-  }, []);
+    // Trigger loadMore when user scrolls within 150px of the bottom
+    if (currentScrollTop + clientHeight >= scrollHeight - 150) {
+      loadMore();
+    }
+  }, [loadMore]);
 
   useEffect(() => {
     updateScrollState();
@@ -61,14 +99,9 @@ export function WorkspaceActivityFeed({ activities }: WorkspaceActivityFeedProps
           <ActivityIcon className="h-4 w-4 text-primary" />
           Workspace Activity
         </CardTitle>
-        <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2.5 py-0.5 rounded-full">
-          {activities.length} total
-        </span>
       </CardHeader>
       <ScrollFade maxHeight="h-full" contentClassName="mt-3 p-1 flex flex-col min-h-24">
         <CardContent className="p-0 relative flex-1 overflow-hidden min-h-0">
-
-          {/* Scrollable Virtualized Container */}
           <div
             ref={containerRef}
             onScroll={updateScrollState}
@@ -80,7 +113,7 @@ export function WorkspaceActivityFeed({ activities }: WorkspaceActivityFeedProps
               </div>
             ) : (
               <div
-                style={{ height: `${totalHeight}px`, position: "relative" }}
+                style={{ height: `${totalHeight + (loadingMore ? 40 : 0)}px`, position: "relative" }}
                 className="w-full"
               >
                 <div
@@ -114,6 +147,11 @@ export function WorkspaceActivityFeed({ activities }: WorkspaceActivityFeedProps
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+            {loadingMore && (
+              <div className="flex justify-center py-2">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
               </div>
             )}
           </div>
