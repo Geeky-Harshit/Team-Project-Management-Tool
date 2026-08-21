@@ -22,25 +22,30 @@ export default async function OrgDashboardPage({
   await validateOrgAccess(org.id, "viewer");
 
   // Fetch data in batch via Prisma
-  const boards = await prisma.board.findMany({
-    where: { organizationId: org.id, archived: false },
-  });
-  const boardIds = boards.map((b) => b.id);
+  // Fetch boards (with lists and cards) and activities concurrently
+  const [boards, rawActivities] = await Promise.all([
+    prisma.board.findMany({
+      where: { organizationId: org.id, archived: false },
+      include: {
+        lists: {
+          where: { archived: false },
+          include: {
+            cards: {
+              where: { archived: false },
+            },
+          },
+        },
+      },
+    }),
+    prisma.activity.findMany({
+      where: { organizationId: org.id },
+      take: 30,
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
 
-  const lists = await prisma.list.findMany({
-    where: { boardId: { in: boardIds }, archived: false },
-  });
-  const listIds = lists.map((l) => l.id);
+  const rawCards = boards.flatMap((b) => b.lists.flatMap((l) => l.cards));
 
-  const rawCards = await prisma.card.findMany({
-    where: { listId: { in: listIds }, archived: false },
-  });
-
-  const rawActivities = await prisma.activity.findMany({
-    where: { organizationId: org.id },
-    take: 30,
-    orderBy: { createdAt: "desc" },
-  });
 
   const allCards: Card[] = rawCards.map((c) => ({
     id: c.id,
