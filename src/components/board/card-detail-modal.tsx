@@ -71,10 +71,16 @@ export function CardDetailModal({ card, boardId, onClose, canEdit = true }: Card
 
   useEffect(() => {
     if (!currentOrg) return;
-    setMembersLoading(true);
-    authClient.organization
-      .listMembers({ query: { organizationId: currentOrg.id } })
-      .then((res) => {
+    let isMounted = true;
+
+    async function fetchMembers() {
+      try {
+        const res = await authClient.organization.listMembers({
+          query: { organizationId: currentOrg!.id },
+        });
+
+        if (!isMounted) return;
+
         if (res.data?.members) {
           setMembers(
             res.data.members.map((m) => ({
@@ -84,9 +90,22 @@ export function CardDetailModal({ card, boardId, onClose, canEdit = true }: Card
             }))
           );
         }
-      })
-      .finally(() => setMembersLoading(false));
+      } catch (err) {
+        console.error("Failed to load organization members:", err);
+      } finally {
+        if (isMounted) {
+          setMembersLoading(false);
+        }
+      }
+    }
+
+    fetchMembers();
+
+    return () => {
+      isMounted = false;
+    };
   }, [currentOrg]);
+
 
   const handleSave = async () => {
     if (!currentOrg || !canEdit || !hasChanges || !formData.title.trim()) return;
