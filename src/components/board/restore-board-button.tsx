@@ -1,10 +1,9 @@
 "use client";
 
 import { restoreBoard } from "@/actions/boards-action";
-import { showActivityToast } from "@/lib/show-activity-toast";
 import { Loader2, RotateCcw } from "lucide-react";
 import { useTransition } from "react";
-import {toast} from "sonner"
+import { toast } from "sonner";
 
 interface RestoreBoardButtonProps {
   boardId: string;
@@ -19,7 +18,7 @@ export default function RestoreBoardButton({
 
   const handleRestore = () => {
     startTransition(async () => {
-      const result = await restoreBoard(boardId, orgId);
+      await restoreBoard(boardId, orgId);
       toast.success("board restored")
     });
   };

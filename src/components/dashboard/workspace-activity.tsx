@@ -1,9 +1,9 @@
 "use client";
 
-import { useRef, useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity } from "@/types";
-import { ChevronsDown, ChevronsUp, Activity as ActivityIcon } from "lucide-react";
+import { Activity as ActivityIcon } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ScrollFade } from "../scroll-fade";
 
 interface WorkspaceActivityFeedProps {
@@ -17,8 +17,6 @@ export function WorkspaceActivityFeed({ activities }: WorkspaceActivityFeedProps
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(400);
-  const [showTop, setShowTop] = useState(false);
-  const [showBottom, setShowBottom] = useState(false);
 
   const totalHeight = activities.length * ITEM_HEIGHT;
 
@@ -28,13 +26,10 @@ export function WorkspaceActivityFeed({ activities }: WorkspaceActivityFeedProps
 
     const currentScrollTop = el.scrollTop;
     const clientHeight = el.clientHeight;
-    const scrollHeight = totalHeight;
 
     setScrollTop(currentScrollTop);
     setViewportHeight(clientHeight || 400);
 
-    setShowTop(currentScrollTop > 0);
-    setShowBottom(currentScrollTop + clientHeight < scrollHeight - 4);
   }, [totalHeight]);
 
   useEffect(() => {

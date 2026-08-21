@@ -23,7 +23,7 @@ export async function createList(formData: FormData) {
   });
   const position = maxPositionList ? maxPositionList.position + 1000 : 1000;
 
-  const list = await prisma.list.create({
+  await prisma.list.create({
     data: {
       name,
       boardId,
@@ -50,7 +50,7 @@ export async function renameList(listId: string, boardId: string, orgId: string,
   });
   if (!board) throw new Error("Board access denied");
 
-  const list = await prisma.list.update({
+  await prisma.list.update({
     where: { id: listId, boardId },
     data: { name: newName },
   });
