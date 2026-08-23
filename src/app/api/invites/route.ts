@@ -3,7 +3,7 @@ import { getSession } from "@/lib/auth/auth";
 import { requireRole } from "@/lib/auth/permissions";
 import { sendInviteEmail } from "@/lib/mailer";
 import { prisma } from "@/lib/prisma";
-import { Role } from "@/types";
+import { createInviteSchema, deleteInviteSchema } from "@/lib/validations";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -46,18 +46,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { organizationId, email, role } = (await request.json()) as {
-      organizationId?: string;
-      email?: string;
-      role?: Role;
-    };
-
-    if (!organizationId || !email) {
-      return NextResponse.json(
-        { error: "organizationId and email required" },
-        { status: 400 },
-      );
-    }
+    const body = await request.json();
+    const { organizationId, email, role } = createInviteSchema.parse(body);
 
     await requireRole(session.user.id, organizationId, "admin");
 
@@ -113,7 +103,7 @@ export async function POST(request: NextRequest) {
       data: {
         organizationId,
         email: normalizedEmail,
-        role: role || "member",
+        role,
         status: "pending",
         inviterId: session.user.id,
         expiresAt,
@@ -124,7 +114,7 @@ export async function POST(request: NextRequest) {
       organizationId,
       actorId: session.user.id,
       type: "MEMBER_INVITED",
-      message: "invited " + normalizedEmail + " as " + (role || "member"),
+      message: `invited ${normalizedEmail} as ${role}`,
     });
 
     const org = await prisma.organization.findUnique({
@@ -132,13 +122,13 @@ export async function POST(request: NextRequest) {
       select: { name: true },
     });
 
-    const joinUrl = request.nextUrl.origin + "/invite?token=" + invite.id;
+    const joinUrl = `${request.nextUrl.origin}/invite?token=${invite.id}`;
 
     try {
       await sendInviteEmail({
         to: normalizedEmail,
         orgName: org?.name || "Unknown Organization",
-        role: role || "member",
+        role,
         joinUrl,
         inviterName: session.user.name || session.user.email,
       });
@@ -160,17 +150,8 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { organizationId, token } = (await request.json()) as {
-      organizationId?: string;
-      token?: string;
-    };
-
-    if (!organizationId || !token) {
-      return NextResponse.json(
-        { error: "organizationId and token required" },
-        { status: 400 },
-      );
-    }
+    const body = await request.json();
+    const { organizationId, token } = deleteInviteSchema.parse(body);
 
     await requireRole(session.user.id, organizationId, "admin");
 
