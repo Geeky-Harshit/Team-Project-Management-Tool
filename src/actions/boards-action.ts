@@ -3,17 +3,24 @@
 import { logActivity } from "@/lib/activity-logger";
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
 import { prisma } from "@/lib/prisma";
+import {
+  createBoardSchema,
+  renameBoardSchema,
+  boardActionSchema,
+} from "@/lib/validations";
 import { revalidatePath } from "next/cache";
 
 export async function createBoard(formData: FormData) {
-  const orgId = formData.get("organizationId") as string;
-  const name = formData.get("name") as string;
+  const parsed = createBoardSchema.parse({
+    organizationId: formData.get("organizationId"),
+    name: formData.get("name"),
+  });
 
-  const { user, org } = await validateOrgAccess(orgId, "member");
+  const { user, org } = await validateOrgAccess(parsed.organizationId, "member");
 
   const board = await prisma.board.create({
     data: {
-      name,
+      name: parsed.name,
       organizationId: org.id,
     },
   });
@@ -23,7 +30,7 @@ export async function createBoard(formData: FormData) {
     boardId: board.id,
     actorId: user.id,
     type: "BOARD_CREATED",
-    message: `created board "${name}"`,
+    message: `created board "${parsed.name}"`,
   });
 
   revalidatePath(`/${org.slug}/boards`);
@@ -37,21 +44,20 @@ export async function renameBoard(
   orgId: string,
   newName: string,
 ) {
-  const { user, org } = await validateOrgAccess(orgId, "member");
+  const parsed = renameBoardSchema.parse({ boardId, orgId, newName });
+  const { user, org } = await validateOrgAccess(parsed.orgId, "member");
 
   const board = await prisma.board.update({
-    where: { id: boardId, organizationId: org.id },
-    data: { name: newName },
+    where: { id: parsed.boardId, organizationId: org.id },
+    data: { name: parsed.newName },
   });
-
-  if (!board) throw new Error("Board not found");
 
   await logActivity({
     organizationId: org.id,
     boardId: board.id,
     actorId: user.id,
     type: "BOARD_RENAMED",
-    message: `renamed board to "${newName}"`,
+    message: `renamed board to "${parsed.newName}"`,
   });
 
   revalidatePath(`/${org.slug}/boards`);
@@ -61,14 +67,13 @@ export async function renameBoard(
 }
 
 export async function archiveBoard(boardId: string, orgId: string) {
-  const { user, org } = await validateOrgAccess(orgId, "member");
+  const parsed = boardActionSchema.parse({ boardId, orgId });
+  const { user, org } = await validateOrgAccess(parsed.orgId, "member");
 
   const board = await prisma.board.update({
-    where: { id: boardId, organizationId: org.id },
+    where: { id: parsed.boardId, organizationId: org.id },
     data: { archived: true },
   });
-
-  if (!board) throw new Error("Board not found");
 
   await logActivity({
     organizationId: org.id,
@@ -83,14 +88,13 @@ export async function archiveBoard(boardId: string, orgId: string) {
 }
 
 export async function restoreBoard(boardId: string, orgId: string) {
-  const { user, org } = await validateOrgAccess(orgId, "admin");
+  const parsed = boardActionSchema.parse({ boardId, orgId });
+  const { user, org } = await validateOrgAccess(parsed.orgId, "admin");
 
   const board = await prisma.board.update({
-    where: { id: boardId, organizationId: org.id },
+    where: { id: parsed.boardId, organizationId: org.id },
     data: { archived: false },
   });
-
-  if (!board) throw new Error("Board not found");
 
   await logActivity({
     organizationId: org.id,
