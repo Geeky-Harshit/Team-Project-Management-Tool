@@ -13,9 +13,9 @@ export const createCardSchema = z.object({
     .default(""),
   assigneeId: z.string().min(1).nullable().optional(),
   dueDate: z.iso.datetime().nullable().optional(),
-  listId: z.string().min(1, "List ID is required"),
-  boardId: z.string().min(1, "Board ID is required"),
-  orgId: z.string().min(1, "Organization ID is required"),
+  listId: z.uuid("List ID is required"),
+  boardId: z.uuid("Board ID is required"),
+  orgId: z.uuid("Organization ID is required"),
 });
 
 export const updateCardDetailsSchema = z.object({
@@ -29,26 +29,26 @@ export const updateCardDetailsSchema = z.object({
     .string()
     .max(5000, "Description must not exceed 5000 characters")
     .optional(),
-  assigneeId: z.string().min(1).nullable().optional(),
+  assigneeId: z.uuid().nullable().optional(),
   dueDate: z.date().nullable().optional(),
 });
 
 export const addCommentSchema = z.object({
-  cardId: z.string().min(1, "Card ID is required"),
-  boardId: z.string().min(1, "Board ID is required"),
-  orgId: z.string().min(1, "Organization ID is required"),
+  cardId: z.uuid("Card ID is required"),
+  boardId: z.uuid("Board ID is required"),
+  orgId: z.uuid("Organization ID is required"),
   content: z
     .string()
     .trim()
     .min(1, "Comment content cannot be empty")
     .max(2000, "Comment must not exceed 2000 characters"),
-  parentId: z.string().min(1).nullable().optional(),
+  parentId: z.uuid().nullable().optional(),
 });
 
 export const deleteCardSchema = z.object({
-  cardId: z.string().min(1, "Card ID is required"),
-  boardId: z.string().min(1, "Board ID is required"),
-  orgId: z.string().min(1, "Organization ID is required"),
+  cardId: z.uuid("Card ID is required"),
+  boardId: z.uuid("Board ID is required"),
+  orgId: z.uuid("Organization ID is required"),
 });
 
 export type CreateCardInput = z.infer<typeof createCardSchema>;

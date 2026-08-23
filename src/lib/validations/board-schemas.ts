@@ -6,12 +6,12 @@ export const createBoardSchema = z.object({
         .trim()
         .min(1, "Board name is required")
         .max(100, "Board name must not exceed 100 characters"),
-    organizationId: z.string().min(1, "Organization ID is required"),
+    organizationId: z.uuid("Organization ID is required"),
 });
 
 export const renameBoardSchema = z.object({
-    boardId: z.string().min(1, "Board ID is required"),
-    orgId: z.string().min(1, "Organization ID is required"),
+    boardId: z.uuid("Board ID is required"),
+    orgId: z.uuid("Organization ID is required"),
     newName: z
         .string()
         .trim()
@@ -20,8 +20,8 @@ export const renameBoardSchema = z.object({
 });
 
 export const boardActionSchema = z.object({
-    boardId: z.string().min(1, "Board ID is required"),
-    orgId: z.string().min(1, "Organization ID is required"),
+    boardId: z.uuid("Board ID is required"),
+    orgId: z.uuid("Organization ID is required"),
 });
 
 export type CreateBoardInput = z.infer<typeof createBoardSchema>;
