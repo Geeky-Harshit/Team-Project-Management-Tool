@@ -3,30 +3,37 @@
 import { logActivity } from "@/lib/activity-logger";
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
 import { prisma } from "@/lib/prisma";
+import {
+  createListSchema,
+  renameListSchema,
+  deleteListSchema,
+} from "@/lib/validations";
 import { revalidatePath } from "next/cache";
 
 export async function createList(formData: FormData) {
-  const name = formData.get("name") as string;
-  const boardId = formData.get("boardId") as string;
-  const orgId = formData.get("orgId") as string;
+  const parsed = createListSchema.parse({
+    name: formData.get("name"),
+    boardId: formData.get("boardId"),
+    orgId: formData.get("orgId"),
+  });
 
-  const { user, org } = await validateOrgAccess(orgId, "member");
+  const { user, org } = await validateOrgAccess(parsed.orgId, "member");
 
   const board = await prisma.board.findFirst({
-    where: { id: boardId, organizationId: org.id },
+    where: { id: parsed.boardId, organizationId: org.id },
   });
   if (!board) throw new Error("Board access denied");
 
   const maxPositionList = await prisma.list.findFirst({
-    where: { boardId },
+    where: { boardId: parsed.boardId },
     orderBy: { position: "desc" },
   });
   const position = maxPositionList ? maxPositionList.position + 1000 : 1000;
 
   await prisma.list.create({
     data: {
-      name,
-      boardId,
+      name: parsed.name,
+      boardId: parsed.boardId,
       position,
     },
   });
@@ -36,23 +43,29 @@ export async function createList(formData: FormData) {
     boardId: board.id,
     actorId: user.id,
     type: "LIST_CREATED",
-    message: `created list "${name}" on board "${board.name}"`,
+    message: `created list "${parsed.name}" on board "${board.name}"`,
   });
 
-  revalidatePath(`/${org.slug}/boards/${boardId}`);
+  revalidatePath(`/${org.slug}/boards/${parsed.boardId}`);
 }
 
-export async function renameList(listId: string, boardId: string, orgId: string, newName: string) {
-  const { user, org } = await validateOrgAccess(orgId, "member");
+export async function renameList(
+  listId: string,
+  boardId: string,
+  orgId: string,
+  newName: string
+) {
+  const parsed = renameListSchema.parse({ listId, boardId, orgId, newName });
+  const { user, org } = await validateOrgAccess(parsed.orgId, "member");
 
   const board = await prisma.board.findFirst({
-    where: { id: boardId, organizationId: org.id },
+    where: { id: parsed.boardId, organizationId: org.id },
   });
   if (!board) throw new Error("Board access denied");
 
   await prisma.list.update({
-    where: { id: listId, boardId },
-    data: { name: newName },
+    where: { id: parsed.listId, boardId: parsed.boardId },
+    data: { name: parsed.newName },
   });
 
   await logActivity({
@@ -60,24 +73,28 @@ export async function renameList(listId: string, boardId: string, orgId: string,
     boardId: board.id,
     actorId: user.id,
     type: "LIST_RENAMED",
-    message: `renamed list to "${newName}" on board "${board.name}"`,
+    message: `renamed list to "${parsed.newName}" on board "${board.name}"`,
   });
 
-  revalidatePath(`/${org.slug}/boards/${boardId}`);
+  revalidatePath(`/${org.slug}/boards/${parsed.boardId}`);
 }
 
-export async function deleteList(listId: string, boardId: string, orgId: string) {
-  const { user, org } = await validateOrgAccess(orgId, "member");
+export async function deleteList(
+  listId: string,
+  boardId: string,
+  orgId: string
+) {
+  const parsed = deleteListSchema.parse({ listId, boardId, orgId });
+  const { user, org } = await validateOrgAccess(parsed.orgId, "member");
 
   const board = await prisma.board.findFirst({
-    where: { id: boardId, organizationId: org.id },
+    where: { id: parsed.boardId, organizationId: org.id },
   });
   if (!board) throw new Error("Board access denied");
 
   const list = await prisma.list.delete({
-    where: { id: listId, boardId },
+    where: { id: parsed.listId, boardId: parsed.boardId },
   });
-  if (!list) throw new Error("List not found");
 
   await logActivity({
     organizationId: org.id,
@@ -87,5 +104,5 @@ export async function deleteList(listId: string, boardId: string, orgId: string)
     message: `deleted list "${list.name}" on board "${board.name}"`,
   });
 
-  revalidatePath(`/${org.slug}/boards/${boardId}`);
+  revalidatePath(`/${org.slug}/boards/${parsed.boardId}`);
 }
