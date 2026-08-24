@@ -2,6 +2,10 @@ import { logActivity } from "@/lib/activity-logger";
 import { getSession } from "@/lib/auth/auth";
 import { requireRole } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
+import {
+  createCardApiSchema,
+  updateCardsPatchSchema,
+} from "@/lib/validations";
 import { Role } from "@/types";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -61,20 +65,12 @@ export async function POST(
   try {
     const { id } = await params;
     const { userId, board } = await checkBoardAccess(id, "member");
-    const { title, listId } = (await request.json()) as {
-      title?: string;
-      listId?: string;
-    };
 
-    if (!title || !listId) {
-      return NextResponse.json(
-        { error: "Title and listId required" },
-        { status: 400 },
-      );
-    }
+    const body = await request.json();
+    const parsed = createCardApiSchema.parse(body);
 
     const list = await prisma.list.findFirst({
-      where: { id: listId, boardId: board.id },
+      where: { id: parsed.listId, boardId: board.id },
     });
     if (!list)
       return NextResponse.json(
@@ -83,15 +79,18 @@ export async function POST(
       );
 
     const maxPositionCard = await prisma.card.findFirst({
-      where: { listId },
+      where: { listId: parsed.listId },
       orderBy: { position: "desc" },
     });
     const position = maxPositionCard ? maxPositionCard.position + 1000 : 1000;
 
     const card = await prisma.card.create({
       data: {
-        title,
-        listId,
+        title: parsed.title,
+        description: parsed.description,
+        assigneeId: parsed.assigneeId,
+        dueDate: parsed.dueDate ? new Date(parsed.dueDate) : null,
+        listId: parsed.listId,
         position,
         createdBy: userId,
       },
@@ -103,7 +102,7 @@ export async function POST(
       cardId: card.id,
       actorId: userId,
       type: "CARD_CREATED",
-      message: `created card "${title}" via API`,
+      message: `created card "${parsed.title}" via API`,
     });
 
     return NextResponse.json(card, { status: 201 });
@@ -121,43 +120,32 @@ export async function PATCH(
     const { id } = await params;
     const { userId, board } = await checkBoardAccess(id, "member");
 
-    const body = (await request.json()) as {
-      cardId?: string;
-      targetListId?: string;
-      targetCardIds?: string[];
-      sourceListId?: string;
-      sourceCardIds?: string[];
-      cardIds?: string[];
-      listId?: string;
-      title?: string;
-      description?: string;
-      assigneeId?: string | null;
-      dueDate?: string | null;
-    };
+    const body = await request.json();
+    const payload = updateCardsPatchSchema.parse(body);
 
     // 1) Move card across lists + update orders in both lists inside an atomic SQL transaction
     if (
-      body.cardId &&
-      body.targetListId &&
-      body.sourceListId &&
-      Array.isArray(body.targetCardIds) &&
-      Array.isArray(body.sourceCardIds)
+      payload.cardId &&
+      payload.targetListId &&
+      payload.sourceListId &&
+      Array.isArray(payload.targetCardIds) &&
+      Array.isArray(payload.sourceCardIds)
     ) {
       await prisma.$transaction([
         prisma.card.update({
-          where: { id: body.cardId },
-          data: { listId: body.targetListId },
+          where: { id: payload.cardId },
+          data: { listId: payload.targetListId },
         }),
-        ...body.targetCardIds.map((cardId, idx) =>
+        ...payload.targetCardIds.map((cardId, idx) =>
           prisma.card.update({
             where: { id: cardId },
-            data: { listId: body.targetListId, position: (idx + 1) * 1000 },
+            data: { listId: payload.targetListId, position: (idx + 1) * 1000 },
           }),
         ),
-        ...body.sourceCardIds.map((cardId, idx) =>
+        ...payload.sourceCardIds.map((cardId, idx) =>
           prisma.card.update({
             where: { id: cardId },
-            data: { listId: body.sourceListId, position: (idx + 1) * 1000 },
+            data: { listId: payload.sourceListId, position: (idx + 1) * 1000 },
           }),
         ),
       ]);
@@ -165,7 +153,7 @@ export async function PATCH(
       await logActivity({
         organizationId: board.organizationId,
         boardId: board.id,
-        cardId: body.cardId,
+        cardId: payload.cardId,
         actorId: userId,
         type: "CARD_MOVED",
         message: "moved card to another list",
@@ -176,15 +164,15 @@ export async function PATCH(
 
     // 2) Bulk reorder inside one list
     if (
-      Array.isArray(body.cardIds) &&
-      body.cardIds.length > 0 &&
-      body.listId &&
-      !body.cardId
+      Array.isArray(payload.cardIds) &&
+      payload.cardIds.length > 0 &&
+      payload.listId &&
+      !payload.cardId
     ) {
       await prisma.$transaction(
-        body.cardIds.map((cardId, idx) =>
+        payload.cardIds.map((cardId, idx) =>
           prisma.card.update({
-            where: { id: cardId, listId: body.listId },
+            where: { id: cardId, listId: payload.listId },
             data: { position: (idx + 1) * 1000 },
           }),
         ),
@@ -194,15 +182,22 @@ export async function PATCH(
     }
 
     // 3) Single card details update
-    if (body.cardId) {
-      const updates: Record<string, unknown> = {};
-      if (typeof body.title === "string") updates.title = body.title;
-      if (typeof body.description === "string") updates.description = body.description;
-      if ("assigneeId" in body) updates.assigneeId = body.assigneeId ?? null;
-      if ("dueDate" in body) updates.dueDate = body.dueDate ? new Date(body.dueDate) : null;
+    if (payload.cardId) {
+      const updates: {
+        title?: string;
+        description?: string;
+        assigneeId?: string | null;
+        dueDate?: Date | null;
+      } = {};
+
+      if (payload.title !== undefined) updates.title = payload.title;
+      if (payload.description !== undefined) updates.description = payload.description;
+      if (payload.assigneeId !== undefined) updates.assigneeId = payload.assigneeId;
+      if (payload.dueDate !== undefined)
+        updates.dueDate = payload.dueDate ? new Date(payload.dueDate) : null;
 
       const updatedCard = await prisma.card.update({
-        where: { id: body.cardId },
+        where: { id: payload.cardId },
         data: updates,
       });
 
