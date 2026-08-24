@@ -11,6 +11,7 @@ import {
   memberAc,
 } from "better-auth/plugins/organization/access";
 import { prisma } from "@/lib/prisma";
+import { cache } from "react";
 
 const statements = {
   ...defaultStatements,
@@ -42,13 +43,12 @@ export const auth = betterAuth({
   },
 });
 
-export async function getSession() {
+export const getSession = cache(async () => {
   const result = await auth.api.getSession({
     headers: await headers(),
   });
-
   return result;
-}
+});
 
 export async function signOut() {
   const result = await auth.api.signOut({

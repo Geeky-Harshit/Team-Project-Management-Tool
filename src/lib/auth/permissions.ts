@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { Role } from "@/types";
+import { cache } from "react";
 
 const roleHierarchy: Record<Role, number> = {
   owner: 4,
@@ -8,19 +9,15 @@ const roleHierarchy: Record<Role, number> = {
   viewer: 1,
 };
 
-// Retrieves the user's role in a specific organization.
-export async function getUserOrgRole(
-  userId: string,
-  organizationId: string,
-): Promise<Role | null> {
-  const membership = await prisma.member.findFirst({
-    where: {
-      userId,
-      organizationId,
-    },
-  });
-  return membership ? (membership.role as Role) : null;
-}
+// Retrieves the user's role in a specific organization and cache using react.
+export const getUserOrgRole = cache(
+  async (userId: string, organizationId: string): Promise<Role | null> => {
+    const membership = await prisma.member.findFirst({
+      where: { userId, organizationId },
+    });
+    return membership ? (membership.role as Role) : null;
+  },
+);
 
 // Checks if a user has at least the minimum role required. Throws an error if they don't.
 export async function requireRole(

@@ -3,13 +3,17 @@ import { requireRole } from "./permissions";
 import { Role } from "@/types";
 import { prisma } from "@/lib/prisma";
 
-export async function validateOrgAccess(orgId: string, minRole: Role) {
+export async function validateOrgAccess(
+  orgId: string,
+  minRole: Role,
+  preloadedOrg?: { id: string; slug: string; name: string }
+) {
   const session = await getSession();
   if (!session) {
     throw new Error("Unauthorized");
   }
 
-  const org = await prisma.organization.findUnique({
+  const org = preloadedOrg ?? await prisma.organization.findUnique({
     where: { id: orgId },
   });
 
