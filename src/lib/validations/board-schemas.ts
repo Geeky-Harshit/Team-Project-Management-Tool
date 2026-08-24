@@ -6,20 +6,20 @@ export const createBoardSchema = z.object({
         .trim()
         .min(1, "Board name is required")
         .max(100, "Board name must not exceed 100 characters"),
-    organizationId: z.uuid("Organization ID is required"),
+    organizationId: z.string().min(1, "Organization ID is required"),
 });
 
 export const createOrgBoardApiSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(1, "Board name is required")
-    .max(100, "Board name must not exceed 100 characters"),
+    name: z
+        .string()
+        .trim()
+        .min(1, "Board name is required")
+        .max(100, "Board name must not exceed 100 characters"),
 });
 
 export const renameBoardSchema = z.object({
-    boardId: z.uuid("Board ID is required"),
-    orgId: z.uuid("Organization ID is required"),
+    boardId: z.string().min(1, "Board ID is required"),
+    orgId: z.string().min(1, "Organization ID is required"),
     newName: z
         .string()
         .trim()
@@ -28,11 +28,11 @@ export const renameBoardSchema = z.object({
 });
 
 export const boardActionSchema = z.object({
-    boardId: z.uuid("Board ID is required"),
-    orgId: z.uuid("Organization ID is required"),
+    boardId: z.string().min(1, "Board ID is required"),
+    orgId: z.string().min(1, "Organization ID is required"),
 });
 
 export type CreateBoardInput = z.infer<typeof createBoardSchema>;
+export type CreateOrgBoardApiInput = z.infer<typeof createOrgBoardApiSchema>;
 export type RenameBoardInput = z.infer<typeof renameBoardSchema>;
 export type BoardActionInput = z.infer<typeof boardActionSchema>;
-export type CreateOrgBoardApiInput = z.infer<typeof createOrgBoardApiSchema>;
