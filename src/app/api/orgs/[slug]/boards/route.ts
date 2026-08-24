@@ -2,6 +2,7 @@ import { logActivity } from "@/lib/activity-logger";
 import { getSession } from "@/lib/auth/auth";
 import { requireRole } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
+import { createOrgBoardApiSchema } from "@/lib/validations";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
@@ -50,9 +51,8 @@ export async function POST(
     if (!session)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { name } = await request.json();
-    if (!name)
-      return NextResponse.json({ error: "Name required" }, { status: 400 });
+    const body = await request.json();
+    const { name } = createOrgBoardApiSchema.parse(body);
 
     const org = await prisma.organization.findUnique({
       where: { slug },
