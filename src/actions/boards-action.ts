@@ -8,7 +8,7 @@ import {
   renameBoardSchema,
   boardActionSchema,
 } from "@/lib/validations";
-import { revalidatePath } from "next/cache";
+import { updateTag } from "next/cache";
 
 export async function createBoard(formData: FormData) {
   const parsed = createBoardSchema.parse({
@@ -16,7 +16,10 @@ export async function createBoard(formData: FormData) {
     name: formData.get("name"),
   });
 
-  const { user, org } = await validateOrgAccess(parsed.organizationId, "member");
+  const { user, org } = await validateOrgAccess(
+    parsed.organizationId,
+    "member",
+  );
 
   const board = await prisma.board.create({
     data: {
@@ -33,7 +36,7 @@ export async function createBoard(formData: FormData) {
     message: `created board "${parsed.name}"`,
   });
 
-  revalidatePath(`/${org.slug}/boards`);
+  updateTag(`org-${org.id}-boards`);
   return {
     success: true,
   };
@@ -60,7 +63,10 @@ export async function renameBoard(
     message: `renamed board to "${parsed.newName}"`,
   });
 
-  revalidatePath(`/${org.slug}/boards`);
+  // Invalidate both the individual board and the organization's boards list
+  updateTag(`board-${board.id}`);
+  updateTag(`org-${org.id}-boards`);
+
   return {
     success: true,
   };
@@ -83,7 +89,10 @@ export async function archiveBoard(boardId: string, orgId: string) {
     message: `archived board "${board.name}"`,
   });
 
-  revalidatePath(`/${org.slug}/boards`);
+  // Invalidate both caches
+  updateTag(`board-${board.id}`);
+  updateTag(`org-${org.id}-boards`);
+
   return { success: true };
 }
 
@@ -104,8 +113,9 @@ export async function restoreBoard(boardId: string, orgId: string) {
     message: `restored board "${board.name}"`,
   });
 
-  revalidatePath(`/${org.slug}/boards/archived`, "page");
-  revalidatePath(`/${org.slug}/boards`, "page");
+  // Invalidate both caches
+  updateTag(`board-${board.id}`);
+  updateTag(`org-${org.id}-boards`);
 
   return { success: true };
 }
