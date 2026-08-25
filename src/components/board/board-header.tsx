@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { renameBoard, archiveBoard } from "@/actions/boards-action";
+import { archiveBoard } from "@/actions/boards-action";
 import { createList } from "@/actions/lists-action";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Archive, Edit2, Plus, Search, X } from "lucide-react";
+import { Archive, Plus, Search, X } from "lucide-react";
 import { useOrgs } from "@/hooks/useOrgs";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, } from "@/components/ui/dropdown-menu";
@@ -14,6 +14,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, } from "@/com
 import { useRouter } from "next/navigation";
 import { showActivityToast } from "@/lib/show-activity-toast";
 import { MemberUser as IMember } from "@/types"
+import { BoardTitle } from "./board-title";
 
 interface BoardHeaderProps {
   boardId: string;
@@ -39,36 +40,12 @@ export function BoardHeader({
   onSearchChange,
 }: BoardHeaderProps) {
   const { currentOrg } = useOrgs();
-  const [name, setName] = useState(initialName);
-  const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  // Add List state
   const [isAddingList, setIsAddingList] = useState(false);
   const [newListName, setNewListName] = useState("");
   const [listLoading, setListLoading] = useState(false);
 
   const router = useRouter()
-
-  const handleRename = async () => {
-    if (!name.trim() || name === initialName || !currentOrg) {
-      setIsEditing(false);
-      return;
-    }
-    setLoading(true);
-    try {
-      const result = await renameBoard(boardId, currentOrg.id, name);
-      if (result.success) {
-        showActivityToast("BOARD_RENAMED");
-      }
-      setIsEditing(false);
-    } catch (err) {
-      console.error(err);
-      toast.error("error");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleArchive = async () => {
     if (!confirm("Archive this board?") || !currentOrg) return;
@@ -129,33 +106,12 @@ export function BoardHeader({
       <div className="flex flex-col gap-4 shrink-0 pb-4 border-b border-gray-200 font-sans">
         {/* Top Row: Board Title & Action Buttons */}
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            {canEdit && isEditing ? (
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onBlur={handleRename}
-                onKeyDown={(e) => e.key === "Enter" && handleRename()}
-                className="text-2xl font-bold h-10 w-64 focus-visible:ring-primary font-sans"
-                disabled={loading}
-                autoFocus
-              />
-            ) : (
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-gray-900">{name}</h1>
-                {canEdit && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-gray-400 hover:text-gray-600"
-                    onClick={() => setIsEditing(true)}
-                  >
-                    <Edit2 className="h-3.5 w-3.5" />
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
+          <BoardTitle
+            boardId={boardId}
+            initialName={initialName}
+            orgId={currentOrg?.id || ""}
+            canEdit={canEdit}
+          />
 
           {canEdit && (
             <div className="flex items-center gap-2">
