@@ -1,11 +1,9 @@
 "use client";
 
-import { createList } from "@/actions/lists-action";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useOrgs } from "@/hooks/useOrgs";
 import { Card, List } from "@/types";
 import {
+  closestCorners,
   DndContext,
   DragEndEvent,
   DragOverEvent,
@@ -14,14 +12,13 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  closestCorners,
 } from "@dnd-kit/core";
-import { Columns3, Plus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CardDetailModal } from "./card-detail-modal";
 import { CardItem } from "./card-item";
+import { EmptyBoard } from "./empty-board";
 import ListColumn from "./list-column";
 
 interface KanbanBoardProps {
@@ -52,11 +49,6 @@ export function KanbanBoard({
   const [activeDragCard, setActiveDragCard] = useState<Card | null>(null);
   const [dragRotation, setDragRotation] = useState<number>(0);
   const [mounted, setMounted] = useState(false);
-
-  // Empty state list creation
-  const [isAddingList, setIsAddingList] = useState(false);
-  const [newListName, setNewListName] = useState("");
-  const [listLoading, setListLoading] = useState(false);
 
   useEffect(() => {
     setCards(initialCards);
@@ -251,79 +243,14 @@ export function KanbanBoard({
     }
   };
 
-  const handleCreateList = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newListName.trim() || !currentOrg) return;
-
-    setListLoading(true);
-    try {
-      const formData = new FormData();
-      formData.append("name", newListName.trim());
-      formData.append("boardId", boardId);
-      formData.append("orgId", currentOrg.id);
-
-      await createList(formData);
-      setNewListName("");
-      setIsAddingList(false);
-      toast.success("List created successfully");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create list");
-    } finally {
-      setListLoading(false);
-    }
-  };
-
   const boardContent = (
     <div className="flex-1 overflow-x-auto pb-2">
       {initialLists.length === 0 ? (
-        <div className="flex min-h-[45vh] w-full flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50/50 p-8 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm border border-gray-200 text-gray-400">
-            <Columns3 className="h-6 w-6" />
-          </div>
-          <h3 className="mt-4 text-base font-semibold text-gray-900">No lists in this board</h3>
-          <p className="mt-1 text-xs text-gray-500 max-w-sm">
-            Organize your workflow by creating lists like To Do, In Progress, and Done.
-          </p>
-          {canEdit &&
-            (isAddingList ? (
-              <form onSubmit={handleCreateList} className="mt-5 flex items-center gap-2">
-                <Input
-                  autoFocus
-                  placeholder="Enter list title..."
-                  value={newListName}
-                  onChange={(e) => setNewListName(e.target.value)}
-                  className="h-9 text-xs w-48 bg-white focus-visible:ring-primary"
-                  disabled={listLoading}
-                  required
-                />
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={listLoading || !newListName.trim()}
-                  className="h-9 text-xs px-3.5 bg-primary hover:bg-primary/90"
-                >
-                  {listLoading ? "Adding..." : "Add"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsAddingList(false)}
-                  className="h-9 w-9 text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </form>
-            ) : (
-              <Button
-                onClick={() => setIsAddingList(true)}
-                className="mt-5 bg-primary hover:bg-primary/90 text-xs font-semibold gap-1.5 shadow-sm px-4"
-              >
-                <Plus className="h-4 w-4" />
-                Add First List
-              </Button>
-            ))}
-        </div>
+        <EmptyBoard 
+          boardId={boardId}
+          orgId={currentOrg!.id}
+          canEdit={canEdit}
+        />
       ) : (
         <div className="flex h-full min-h-135 items-start gap-4">
           {initialLists.map((list) => {
