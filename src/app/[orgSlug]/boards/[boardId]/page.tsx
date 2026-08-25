@@ -1,8 +1,7 @@
 import { BoardView } from "@/components/board/board-view";
-import { Member } from "@/components/board/board-header";
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
 import { prisma } from "@/lib/prisma";
-import { Card as ICard, List as IList } from "@/types";
+import { Card as ICard, List as IList, MemberUser as IMember } from "@/types";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -82,9 +81,10 @@ export default async function BoardPage({ params }: PageProps) {
   if (!board) notFound();
 
   // Step 4: Map organization members for assignee filters and modals
-  const boardMembers: Member[] = orgMembers.map((m) => ({
+  const allOrgMembers: IMember[] = orgMembers.map((m) => ({
     id: m.user.id,
     name: m.user.name || "Member",
+    email: m.user.email,
     image: m.user.image,
   }));
 
@@ -127,7 +127,7 @@ export default async function BoardPage({ params }: PageProps) {
       canEdit={canEdit}
       lists={lists}
       cards={cards}
-      members={boardMembers}
+      members={allOrgMembers}
       orgName={org.name}
       overdueCount={overdueCount}
       isAdmin={isAdmin}

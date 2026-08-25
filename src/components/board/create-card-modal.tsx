@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { X, Calendar, User, AlignLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,20 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { createCard } from "@/actions/cards-action";
 import { useOrgs } from "@/hooks/useOrgs";
-import { authClient } from "@/lib/auth/auth-client";
 import { toast } from "sonner";
+import { useOrgMembers } from "@/hooks/useOrgMembers";
 
 interface CreateCardModalProps {
   listId: string;
   listName: string;
   boardId: string;
   onClose: () => void;
-}
-
-interface OrgMemberOption {
-  id: string;
-  name: string;
-  email: string;
 }
 
 export function CreateCardModal({
@@ -39,41 +33,7 @@ export function CreateCardModal({
   const [dueDate, setDueDate] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const [members, setMembers] = useState<OrgMemberOption[]>([]);
-  const [membersLoading, setMembersLoading] = useState(false);
-
-  useEffect(() => {
-    let canceled = false;
-
-    async function loadMembers() {
-      if (!currentOrg) return;
-      setMembersLoading(true);
-      try {
-        const res = await authClient.organization.listMembers({
-          query: { organizationId: currentOrg.id },
-        });
-
-        if (canceled || !res.data) return;
-
-        const nextMembers = res.data.members.map((m) => ({
-          id: m.user.id,
-          name: m.user.name || "Unknown",
-          email: m.user.email || "",
-        }));
-
-        setMembers(nextMembers);
-      } catch {
-        if (!canceled) setMembers([]);
-      } finally {
-        if (!canceled) setMembersLoading(false);
-      }
-    }
-
-    loadMembers();
-    return () => {
-      canceled = true;
-    };
-  }, [currentOrg]);
+  const members = useOrgMembers()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,7 +117,7 @@ export function CreateCardModal({
                 value={assigneeId}
                 onChange={(e) => setAssigneeId(e.target.value)}
                 className="w-full text-xs border border-gray-200 rounded-md p-2 bg-white focus:outline-none focus:ring-1 focus:ring-primary h-9"
-                disabled={loading || membersLoading}
+                disabled={loading}
               >
                 <option value="">Unassigned</option>
                 {members.map((m) => (

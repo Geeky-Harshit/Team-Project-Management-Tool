@@ -13,19 +13,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, } from "@/components/ui/tooltip";
 import { useRouter } from "next/navigation";
 import { showActivityToast } from "@/lib/show-activity-toast";
-
-export interface Member {
-  id: string;
-  name: string;
-  image?: string | null;
-}
+import { MemberUser as IMember } from "@/types"
 
 interface BoardHeaderProps {
   boardId: string;
   initialName: string;
   canEdit?: boolean;
   isAdmin?: boolean;
-  members?: Member[];
+  members?: IMember[];
   selectedAssigneeId?: string | null;
   onSelectAssignee?: (id: string | null) => void;
   searchQuery?: string;

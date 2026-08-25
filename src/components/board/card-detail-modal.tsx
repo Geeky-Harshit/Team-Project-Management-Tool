@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useOrgs } from "@/hooks/useOrgs";
-import { authClient } from "@/lib/auth/auth-client";
 import { Card as ICard } from "@/types";
 import { Calendar, Trash2, User, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { CardComments } from "./card-comments";
+import { useOrgMembers } from "@/hooks/useOrgMembers";
 
 
 interface CardDetailModalProps {
@@ -18,12 +18,6 @@ interface CardDetailModalProps {
   boardId: string;
   onClose: () => void;
   canEdit?: boolean;
-}
-
-interface OrgMember {
-  id: string;
-  name: string;
-  email: string;
 }
 
 export function CardDetailModal({ card, boardId, onClose, canEdit = true }: CardDetailModalProps) {
@@ -36,8 +30,8 @@ export function CardDetailModal({ card, boardId, onClose, canEdit = true }: Card
     assigneeId: card.assigneeId || "",
   });
 
-  const [members, setMembers] = useState<OrgMember[]>([]);
-  const [membersLoading, setMembersLoading] = useState(false);
+  const members=useOrgMembers()
+  console.log(members)
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -68,44 +62,6 @@ export function CardDetailModal({ card, boardId, onClose, canEdit = true }: Card
       formData.assigneeId !== (card.assigneeId || "")
     );
   }, [formData, card]);
-
-  useEffect(() => {
-    if (!currentOrg) return;
-    let isMounted = true;
-
-    async function fetchMembers() {
-      try {
-        const res = await authClient.organization.listMembers({
-          query: { organizationId: currentOrg!.id },
-        });
-
-        if (!isMounted) return;
-
-        if (res.data?.members) {
-          setMembers(
-            res.data.members.map((m) => ({
-              id: m.user.id,
-              name: m.user.name || "Unknown",
-              email: m.user.email || "",
-            }))
-          );
-        }
-      } catch (err) {
-        console.error("Failed to load organization members:", err);
-      } finally {
-        if (isMounted) {
-          setMembersLoading(false);
-        }
-      }
-    }
-
-    fetchMembers();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [currentOrg]);
-
 
   const handleSave = async () => {
     if (!currentOrg || !canEdit || !hasChanges || !formData.title.trim()) return;
@@ -204,7 +160,7 @@ export function CardDetailModal({ card, boardId, onClose, canEdit = true }: Card
                       value={formData.assigneeId}
                       onChange={(e) => handleChange("assigneeId", e.target.value)}
                       className="w-full text-xs border border-gray-200 rounded-md p-2 bg-white focus:outline-none focus:ring-1 focus:ring-primary"
-                      disabled={saving || membersLoading}
+                      disabled={saving}
                     >
                       <option value="">Unassigned</option>
                       {members.map((m) => (
