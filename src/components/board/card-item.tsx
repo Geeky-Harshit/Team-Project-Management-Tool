@@ -14,7 +14,7 @@ interface CardItemProps {
   rotation?: number;
 }
 
-export function CardItem({
+export default function CardItem({
   card,
   onClick,
   dndEnabled = true,
