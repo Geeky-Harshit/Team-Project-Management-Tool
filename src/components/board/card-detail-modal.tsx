@@ -11,6 +11,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import CardComments from "./card-comments";
 import { useOrgMembers } from "@/hooks/useOrgMembers";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
 
 
 interface CardDetailModalProps {
@@ -97,16 +98,29 @@ export default function CardDetailModal({ card, boardId, onClose, canEdit = true
           />
           <div className="flex items-center gap-1">
             {canEdit && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleDelete}
-                disabled={deleting || saving}
-                className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50"
-                title="Delete Card"
+              <AlertDialog>
+              <AlertDialogTrigger
+                disabled={deleting}
+                className="h-7 w-7 text-gray-400 hover:text-red-500 hover:bg-red-50"
+                title="Delete List"
               >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+                <Trash2 className="h-3.5 w-3.5" />
+              </AlertDialogTrigger>
+              <AlertDialogContent className="sm:max-w-lg">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Card</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete &quot;{card.title}&quot;, This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             )}
             <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 text-gray-400">
               <X className="h-4 w-4" />
