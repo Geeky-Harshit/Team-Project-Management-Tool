@@ -9,7 +9,7 @@ import { Card as ICard } from "@/types";
 import { Calendar, Trash2, User, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { CardComments } from "./card-comments";
+import CardComments from "./card-comments";
 import { useOrgMembers } from "@/hooks/useOrgMembers";
 
 
@@ -20,7 +20,7 @@ interface CardDetailModalProps {
   canEdit?: boolean;
 }
 
-export function CardDetailModal({ card, boardId, onClose, canEdit = true }: CardDetailModalProps) {
+export default function CardDetailModal({ card, boardId, onClose, canEdit = true }: CardDetailModalProps) {
   const { currentOrg } = useOrgs();
 
   const [formData, setFormData] = useState({

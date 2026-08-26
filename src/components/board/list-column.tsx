@@ -5,9 +5,9 @@ import { Plus } from "lucide-react";
 import { useState } from "react";
 import { ScrollFade } from "../scroll-fade";
 import { Button } from "../ui/button";
-import { CardItem } from "./card-item";
-import { ColumnHeader } from "./column-header";
-import { CreateCardModal } from "./create-card-modal";
+import CardItem from "./card-item";
+import ColumnHeader from "./column-header";
+import CreateCardModal from "./create-card-modal";
 
 interface ListColumnProps {
   list: List;

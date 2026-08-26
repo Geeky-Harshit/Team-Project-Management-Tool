@@ -16,7 +16,7 @@ interface CardCommentsProps {
   canEdit?: boolean;
 }
 
-export function CardComments({ cardId, boardId, orgId, canEdit = true }: CardCommentsProps) {
+export default function CardComments({ cardId, boardId, orgId, canEdit = true }: CardCommentsProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

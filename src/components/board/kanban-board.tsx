@@ -16,9 +16,9 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { CardDetailModal } from "./card-detail-modal";
-import { CardItem } from "./card-item";
-import { EmptyBoard } from "./empty-board";
+import CardDetailModal from "./card-detail-modal";
+import CardItem from "./card-item";
+import EmptyBoard from "./empty-board";
 import ListColumn from "./list-column";
 
 interface KanbanBoardProps {

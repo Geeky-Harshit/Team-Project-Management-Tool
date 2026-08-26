@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { BoardHeader } from "@/components/board/board-header";
+import BoardHeader from "@/components/board/board-header";
 import { KanbanBoard } from "@/components/board/kanban-board";
-import { List as IList, Card as ICard, MemberUser as IMember } from "@/types";
 import { OrgMembersProvider } from "@/context/org-members-context";
+import { Card as ICard, List as IList, MemberUser as IMember } from "@/types";
+import { useMemo, useState } from "react";
 
 interface BoardViewProps {
   boardId: string;
@@ -18,7 +18,7 @@ interface BoardViewProps {
   isAdmin?: boolean;
 }
 
-export function BoardView({
+export default function BoardView({
   boardId,
   boardName,
   canEdit,

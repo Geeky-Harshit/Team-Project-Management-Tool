@@ -1,4 +1,4 @@
-import { BoardView } from "@/components/board/board-view";
+import BoardView from "@/components/board/board-view";
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
 import { prisma } from "@/lib/prisma";
 import { Card as ICard, List as IList, MemberUser as IMember } from "@/types";

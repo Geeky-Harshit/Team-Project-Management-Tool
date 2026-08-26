@@ -15,7 +15,7 @@ interface BoardTitleProps {
   canEdit?: boolean;
 }
 
-export function BoardTitle({
+export default function BoardTitle({
   boardId,
   initialName,
   orgId,

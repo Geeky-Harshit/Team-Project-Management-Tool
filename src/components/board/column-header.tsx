@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Trash2 } from "lucide-react";
 import { useOrgs } from "@/hooks/useOrgs";
-import { CreateCardModal } from "./create-card-modal";
+import CreateCardModal from "./create-card-modal";
 import { toast } from "sonner";
 
 interface ColumnHeaderProps {
@@ -17,7 +17,7 @@ interface ColumnHeaderProps {
   canEdit?: boolean;
 }
 
-export function ColumnHeader({
+export default function ColumnHeader({
   listId,
   boardId,
   initialName,

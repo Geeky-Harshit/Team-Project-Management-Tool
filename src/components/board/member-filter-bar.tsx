@@ -27,7 +27,7 @@ interface MemberFilterBarProps {
   onSearchChange?: (query: string) => void;
 }
 
-export function MemberFilterBar({
+export default function MemberFilterBar({
   members = [],
   selectedAssigneeId = null,
   onSelectAssignee,

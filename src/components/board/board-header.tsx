@@ -9,9 +9,9 @@ import { Archive } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { AddList } from "./add-list";
-import { BoardTitle } from "./board-title";
-import { MemberFilterBar } from "./member-filter-bar";
+import AddList from "./add-list";
+import BoardTitle from "./board-title";
+import MemberFilterBar from "./member-filter-bar";
 
 interface BoardHeaderProps {
   boardId: string;
@@ -25,7 +25,7 @@ interface BoardHeaderProps {
   onSearchChange?: (query: string) => void;
 }
 
-export function BoardHeader({
+export default function BoardHeader({
   boardId,
   initialName,
   canEdit = true,

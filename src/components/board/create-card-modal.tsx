@@ -1,15 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { X, Calendar, User, AlignLeft } from "lucide-react";
+import { createCard } from "@/actions/cards-action";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { createCard } from "@/actions/cards-action";
-import { useOrgs } from "@/hooks/useOrgs";
-import { toast } from "sonner";
 import { useOrgMembers } from "@/hooks/useOrgMembers";
+import { useOrgs } from "@/hooks/useOrgs";
+import { AlignLeft, Calendar, User, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
 
 interface CreateCardModalProps {
   listId: string;
@@ -18,7 +18,7 @@ interface CreateCardModalProps {
   onClose: () => void;
 }
 
-export function CreateCardModal({
+export default function CreateCardModal({
   listId,
   listName,
   boardId,

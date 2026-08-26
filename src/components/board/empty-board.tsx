@@ -1,7 +1,7 @@
 "use client";
 
 import { Columns3 } from "lucide-react";
-import { AddList } from "./add-list";
+import AddList from "./add-list";
 
 interface EmptyBoardProps {
   boardId: string;
@@ -9,7 +9,7 @@ interface EmptyBoardProps {
   canEdit?: boolean;
 }
 
-export function EmptyBoard({
+export default function EmptyBoard({
   boardId,
   orgId,
   canEdit = true,

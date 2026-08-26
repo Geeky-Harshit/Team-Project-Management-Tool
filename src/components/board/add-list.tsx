@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { createList } from "@/actions/lists-action";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, X } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 interface AddListProps {
@@ -12,7 +12,7 @@ interface AddListProps {
     orgId: string;
 }
 
-export function AddList({ boardId, orgId }: AddListProps) {
+export default function AddList({ boardId, orgId }: AddListProps) {
     const [isAddingList, setIsAddingList] = useState(false);
     const [newListName, setNewListName] = useState("");
     const [loading, setLoading] = useState(false);
