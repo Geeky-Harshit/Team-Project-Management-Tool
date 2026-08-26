@@ -18,13 +18,15 @@ export const OrgContext = createContext<OrgContextValue | null>(null);
 export function OrgProvider({
   children,
   userId,
-  initialCurrentOrg = null
+  initialOrgs = [],
+  initialCurrentOrg = null,
 }: {
   children: React.ReactNode;
   userId: string;
+  initialOrgs?: Organization[];
   initialCurrentOrg?: Organization | null;
 }) {
-  const [orgs, setOrgs] = useState<Organization[]>([]);
+  const [orgs, setOrgs] = useState<Organization[]>(initialOrgs);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const params = useParams();
@@ -46,11 +48,14 @@ export function OrgProvider({
     }
   }, []);
 
+  // Only fetch client-side if NO initial data was provided by the server
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || initialOrgs.length > 0) return;
+
     let isMounted = true;
 
     async function loadOrgs() {
+      setLoading(true);
       try {
         const response = await authClient.organization.list();
         if (isMounted && response?.data) {
@@ -58,6 +63,9 @@ export function OrgProvider({
         }
       } catch (err) {
         console.error("Failed to load organizations", err);
+        if (isMounted) setError("Failed to load organizations");
+      } finally {
+        if (isMounted) setLoading(false);
       }
     }
 
@@ -66,10 +74,8 @@ export function OrgProvider({
     return () => {
       isMounted = false;
     };
-  }, [userId]);
+  }, [userId, initialOrgs.length]);
 
-
-  // Optimize: Use the server-provided org if client list is still loading
   const currentOrg = orgs.find((o) => o.slug === orgSlug) || initialCurrentOrg;
 
   return (
