@@ -49,13 +49,15 @@ export default function ColumnHeader({
   };
 
   const handleDelete = async () => {
-    if (!confirm("Delete this list and all its cards?") || !currentOrg) return;
+    if (!currentOrg) return;
     setLoading(true);
     try {
       await deleteList(listId, boardId, currentOrg.id);
-      toast.success("list deleted");
+      toast.success("List deleted");
     } catch (err) {
       console.error(err);
+      toast.error("Failed to delete list");
+    } finally {
       setLoading(false);
     }
   };
@@ -101,7 +103,7 @@ export default function ColumnHeader({
             <AlertDialog>
               <AlertDialogTrigger
                 disabled={loading}
-                className="h-7 w-7 text-gray-400 hover:text-red-500 hover:bg-red-50"
+                className="inline-flex items-center justify-center rounded-md h-7 w-7 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50 cursor-pointer"
                 title="Delete List"
               >
                 <Trash2 className="h-3.5 w-3.5" />
