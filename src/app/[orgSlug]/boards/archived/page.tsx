@@ -1,12 +1,27 @@
 import RestoreBoardButton from "@/components/board/restore-board-button";
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
+import { getCachedOrgBySlug } from "@/lib/data-cache";
 import { prisma } from "@/lib/prisma";
 import { Archive, ArrowLeft } from "lucide-react";
+import { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 interface PageProps {
   params: Promise<{ orgSlug: string }>;
+}
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { orgSlug } = await params;
+  const org = await getCachedOrgBySlug(orgSlug);
+  if (!org) return { title: "Archived Boards Not Found" };
+
+  return {
+    title: `${org.name} | Archived Boards`,
+    description: `Manage and restore archived boards for ${org.name}.`,
+  };
 }
 
 export default async function ArchivedBoardsPage({ params }: PageProps) {
@@ -60,7 +75,7 @@ export default async function ArchivedBoardsPage({ params }: PageProps) {
       </div>
 
       {archivedBoards.length === 0 ? (
-        <div className="flex min-h-[300px] flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center shadow-sm">
+        <div className="flex min-h-75 flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center shadow-sm">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400">
             <Archive className="h-6 w-6" />
           </div>
