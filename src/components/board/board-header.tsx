@@ -1,7 +1,17 @@
 "use client";
 
 import { archiveBoard } from "@/actions/boards-action";
-import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useOrgs } from "@/hooks/useOrgs";
 import { showActivityToast } from "@/lib/show-activity-toast";
 import { MemberUser as IMember } from "@/types";
@@ -38,18 +48,16 @@ export default function BoardHeader({
 }: BoardHeaderProps) {
   const { currentOrg } = useOrgs();
   const [loading, setLoading] = useState(false);
-
-  const router = useRouter()
+  const router = useRouter();
 
   const handleArchive = async () => {
-    if (!confirm("Archive this board?") || !currentOrg) return;
+    if (!currentOrg) return;
 
     setLoading(true);
-
     try {
       await archiveBoard(boardId, currentOrg.id);
       showActivityToast("BOARD_ARCHIVED");
-      router.replace(`/${currentOrg.slug}/boards`)
+      router.replace(`/${currentOrg.slug}/boards`);
     } catch (err) {
       console.error("Archive failed:", err);
       toast.error("Failed to archive board");
@@ -73,20 +81,37 @@ export default function BoardHeader({
           <div className="flex items-center gap-2">
             <AddList boardId={boardId} orgId={currentOrg?.id || ""} />
             {isAdmin && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleArchive}
-                disabled={loading}
-                className="text-gray-500 hover:text-red-600 hover:bg-red-50 text-xs font-semibold gap-1.5 h-8"
-              >
-                <Archive className="h-3.5 w-3.5" />
-                Archive Board
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger
+                  disabled={loading}
+                  className="inline-flex items-center justify-center rounded-md text-xs font-semibold gap-1.5 h-8 px-3 text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  <Archive className="h-3.5 w-3.5" />
+                  Archive Board
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Archive Board</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to archive this board? It can be restored later from organization settings.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleArchive}
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                    >
+                      Archive
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
           </div>
         )}
-      </div >
+      </div>
+
       {/* Bottom Row: Search + Avatars */}
       <MemberFilterBar
         members={members}
@@ -95,6 +120,6 @@ export default function BoardHeader({
         searchQuery={searchQuery}
         onSearchChange={onSearchChange}
       />
-    </div >
+    </div>
   );
 }
