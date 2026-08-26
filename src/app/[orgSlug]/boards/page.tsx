@@ -1,13 +1,28 @@
-import { prisma } from "@/lib/prisma";
-import { validateOrgAccess } from "@/lib/auth/server-permissions";
-import { notFound } from "next/navigation";
-import Link from "next/link";
-import { Card } from "@/components/ui/card";
 import CreateBoardCard from "@/components/create-board-card";
+import { Card } from "@/components/ui/card";
+import { validateOrgAccess } from "@/lib/auth/server-permissions";
+import { getCachedOrgBySlug } from "@/lib/data-cache";
+import { prisma } from "@/lib/prisma";
 import { Archive } from "lucide-react";
+import { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
 
 interface PageProps {
   params: Promise<{ orgSlug: string }>;
+}
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { orgSlug } = await params;
+  const org = await getCachedOrgBySlug(orgSlug);
+  if (!org) return { title: "Boards Not Found" };
+
+  return {
+    title: `${org.name} | Boards`,
+    description: `Kanban boards and workflows for ${org.name}.`,
+  };
 }
 
 export default async function BoardsPage({ params }: PageProps) {
