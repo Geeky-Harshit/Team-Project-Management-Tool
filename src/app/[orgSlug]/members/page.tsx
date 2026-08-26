@@ -1,6 +1,6 @@
-import { getSession } from "@/lib/auth/auth";
-import { prisma } from "@/lib/prisma";
-import { redirect, notFound } from "next/navigation";
+import { getCachedOrgBySlug } from "@/lib/data-cache";
+import { validateOrgAccess } from "@/lib/auth/server-permissions";
+import { notFound } from "next/navigation";
 import MembersClient from "@/components/members/members-client";
 
 interface PageProps {
@@ -9,31 +9,18 @@ interface PageProps {
 
 export default async function MembersPage({ params }: PageProps) {
   const { orgSlug } = await params;
-  const session = await getSession();
 
-  if (!session) redirect("/sign-in");
-
-  const org = await prisma.organization.findUnique({
-    where: { slug: orgSlug },
-  });
+  const org = await getCachedOrgBySlug(orgSlug);
   if (!org) notFound();
 
-  const membership = await prisma.member.findFirst({
-    where: {
-      organizationId: org.id,
-      userId: session.user.id,
-    },
-  });
-
-  if (!membership) redirect("/dashboard");
-
-  const isAdmin = membership.role === "admin" || membership.role === "owner";
+  const { user, role } = await validateOrgAccess(org.id, "viewer", org);
+  const isAdmin = role === "admin" || role === "owner";
 
   return (
     <MembersClient
       orgId={org.id}
       isAdmin={isAdmin}
-      currentUserId={session.user.id}
+      currentUserId={user.id}
     />
   );
 }
