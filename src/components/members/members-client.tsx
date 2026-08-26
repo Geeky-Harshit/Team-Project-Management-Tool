@@ -6,6 +6,7 @@ import { InviteForm } from "./invite-form";
 import { MembersList } from "./members-list";
 import { PendingInvites } from "./pending-invites";
 import { Role, Invite, MemberWithUser } from "@/types";
+import { toast } from "sonner";
 
 interface MembersClientProps {
   orgId: string;
@@ -102,19 +103,20 @@ export default function MembersClient({
   }, [orgId]);
 
   const handleRemoveMember = async (memberId: string) => {
-    if (!confirm("Are you sure you want to remove this member?")) return;
     try {
       const res = await authClient.organization.removeMember({
         memberIdOrEmail: memberId,
         organizationId: orgId,
       });
       if (res.error) {
-        alert(res.error.message || "Failed to remove member");
+        toast.error(res.error.message || "Failed to remove member");
       } else {
         await fetchMembers();
+        toast.success("Member removed successfully");
       }
     } catch (err) {
       console.error(err);
+      toast.error("Failed to remove member");
     }
   };
 
@@ -126,12 +128,14 @@ export default function MembersClient({
         organizationId: orgId,
       });
       if (res.error) {
-        alert(res.error.message || "Failed to update role");
+        toast.error(res.error.message || "Failed to update role");
       } else {
         await fetchMembers();
+        toast.success("Role updated successfully");
       }
     } catch (err) {
       console.error(err);
+      toast.error("Failed to update role");
     }
   };
 
