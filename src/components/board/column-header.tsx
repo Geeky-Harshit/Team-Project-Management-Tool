@@ -8,6 +8,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { useOrgs } from "@/hooks/useOrgs";
 import CreateCardModal from "./create-card-modal";
 import { toast } from "sonner";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
 
 interface ColumnHeaderProps {
   listId: string;
@@ -97,16 +98,30 @@ export default function ColumnHeader({
             >
               <Plus className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleDelete}
-              disabled={loading}
-              className="h-7 w-7 text-gray-400 hover:text-red-500 hover:bg-red-50"
-              title="Delete List"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger
+                disabled={loading}
+                className="h-7 w-7 text-gray-400 hover:text-red-500 hover:bg-red-50"
+                title="Delete List"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </AlertDialogTrigger>
+              <AlertDialogContent className="sm:max-w-lg">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete List</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete &quot;{name}&quot; and all of its cards? This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
           </div>
         )}
       </div>
