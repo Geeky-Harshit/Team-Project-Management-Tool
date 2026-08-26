@@ -1,11 +1,28 @@
-import { prisma } from "@/lib/prisma";
-import { validateOrgAccess } from "@/lib/auth/server-permissions";
 import { DashboardStats } from "@/components/dashboard/dashboard-stats";
 import { OverdueTasksList } from "@/components/dashboard/overdue-tasks";
 import { WorkloadBreakdown, WorkloadEntry } from "@/components/dashboard/workload-breakdown";
 import { WorkspaceActivityFeed } from "@/components/dashboard/workspace-activity";
+import { validateOrgAccess } from "@/lib/auth/server-permissions";
+import { getCachedOrgBySlug } from "@/lib/data-cache";
+import { prisma } from "@/lib/prisma";
+import { Activity, ActivityType, Card } from "@/types";
+import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Card, Activity, ActivityType } from "@/types";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ orgSlug: string }>;
+}): Promise<Metadata> {
+  const { orgSlug } = await params;
+  const org = await getCachedOrgBySlug(orgSlug);
+  if (!org) return { title: "Organization Not Found" };
+
+  return {
+    title: `${org.name} | Overview`,
+    description: `Overview and task statistics for ${org.name}.`,
+  };
+}
 
 export default async function OrgDashboardPage({
   params,
