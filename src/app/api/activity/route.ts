@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const cursor = searchParams.get("cursor");
     const limit = Math.min(
       Math.max(1, Number(searchParams.get("limit")) || 20),
-      100
+      100,
     );
 
     if (!orgId)
@@ -48,7 +48,9 @@ export async function GET(request: NextRequest) {
 
     const hasMore = activities.length > limit;
     const items = hasMore ? activities.slice(0, limit) : activities;
-    const nextCursor = hasMore ? items[items.length - 1].createdAt.toISOString() : null;
+    const nextCursor = hasMore
+      ? items[items.length - 1].createdAt.toISOString()
+      : null;
 
     return NextResponse.json({
       activities: items.map((a) => ({
@@ -64,9 +66,23 @@ export async function GET(request: NextRequest) {
       nextCursor,
       hasMore,
     });
-
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 400 });
+    const message =
+      err instanceof Error ? err.message : "Internal Server Error";
+
+    if (message === "Unauthorized") {
+      return NextResponse.json({ error: message }, { status: 401 });
+    }
+    if (
+      message === "Insufficient permissions" ||
+      message === "Not a member of this organization"
+    ) {
+      return NextResponse.json({ error: message }, { status: 403 });
+    }
+    if (message.toLowerCase().includes("not found")) {
+      return NextResponse.json({ error: message }, { status: 404 });
+    }
+
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
