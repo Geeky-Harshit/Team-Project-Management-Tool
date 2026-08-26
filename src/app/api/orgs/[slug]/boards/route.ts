@@ -37,10 +37,22 @@ export async function GET(
     return NextResponse.json(boards);
   } catch (err: unknown) {
     const message =
-      err instanceof Error
-        ? err.message
-        : "Something went wrong while getting boards";
-    return NextResponse.json({ error: message }, { status: 400 });
+      err instanceof Error ? err.message : "Internal Server Error";
+
+    if (message === "Unauthorized") {
+      return NextResponse.json({ error: message }, { status: 401 });
+    }
+    if (
+      message === "Insufficient permissions" ||
+      message === "Not a member of this organization"
+    ) {
+      return NextResponse.json({ error: message }, { status: 403 });
+    }
+    if (message.toLowerCase().includes("not found")) {
+      return NextResponse.json({ error: message }, { status: 404 });
+    }
+
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
