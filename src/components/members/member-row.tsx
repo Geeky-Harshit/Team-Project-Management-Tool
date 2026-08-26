@@ -1,7 +1,17 @@
 "use client";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { MemberWithUser, Role } from "@/types";
 import { Trash2 } from "lucide-react";
 
@@ -59,14 +69,31 @@ export function MemberRow({
         )}
 
         {isAdmin && !isSelf && !isOwner && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onRemove(member.id)}
-            className="h-8 w-8 text-gray-400 hover:text-destructive hover:bg-destructive/10"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger
+              className="inline-flex items-center justify-center rounded-md h-8 w-8 text-gray-400 hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+              title="Remove Member"
+            >
+              <Trash2 className="h-4 w-4" />
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Remove Member</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to remove &quot;{member.user.name}&quot; from this organization?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => onRemove(member.id)}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Remove
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         )}
       </div>
     </div>
