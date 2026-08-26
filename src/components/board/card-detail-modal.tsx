@@ -39,7 +39,6 @@ export default function CardDetailModal({ card, boardId, onClose, canEdit = true
 
   const handleDelete = async () => {
     if (!currentOrg || !canEdit) return;
-    if (!confirm(`Are you sure you want to delete "${card.title}"?`)) return;
     setDeleting(true);
     try {
       await deleteCard(card.id, boardId, currentOrg.id);
