@@ -7,6 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { signOut, useSession } from "@/lib/auth/auth-client";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function NavBar() {
   const router = useRouter()
@@ -50,7 +51,7 @@ export default function NavBar() {
                             router.push("/sign-in")
                           }
                           else {
-                            alert("Error signing out")
+                            toast.error("Error signing out");
                           }
                         }}
                       >
