@@ -1,11 +1,11 @@
 import { DashboardStats } from "@/components/dashboard/dashboard-stats";
 import { OverdueTasksList } from "@/components/dashboard/overdue-tasks";
-import { WorkloadBreakdown, WorkloadEntry } from "@/components/dashboard/workload-breakdown";
+import { WorkloadBreakdown } from "@/components/dashboard/workload-breakdown";
 import { WorkspaceActivityFeed } from "@/components/dashboard/workspace-activity";
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
 import { getCachedOrgBySlug } from "@/lib/data-cache";
 import { prisma } from "@/lib/prisma";
-import { Activity, ActivityType, Card } from "@/types";
+import { Activity, ActivityType, Card, WorkloadEntry } from "@/types";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 

@@ -8,6 +8,12 @@ export interface Organization {
   updatedAt?: Date | string;
 }
 
+export interface WorkloadEntry {
+  assignee: string;
+  email?: string;
+  count: number;
+}
+
 export type Role = "owner" | "admin" | "member" | "viewer";
 
 export interface OrganizationMember {

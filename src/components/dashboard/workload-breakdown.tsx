@@ -1,13 +1,8 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { WorkloadEntry } from "@/types";
 import { ScrollFade } from "../scroll-fade";
-
-export interface WorkloadEntry {
-  assignee: string;
-  email?: string;
-  count: number;
-}
 
 export function WorkloadBreakdown({ entries }: { entries: WorkloadEntry[] }) {
   return (
