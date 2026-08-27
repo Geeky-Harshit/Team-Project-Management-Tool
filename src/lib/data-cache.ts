@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { unstable_cache } from "next/cache";
+import { cache } from "react";
 
-export const getCachedOrgBySlug = (slug: string) =>
+export const getCachedOrgBySlug = cache((slug: string) =>
   unstable_cache(
     async () => {
       return prisma.organization.findUnique({
@@ -10,12 +11,13 @@ export const getCachedOrgBySlug = (slug: string) =>
     },
     [`org-slug-${slug}`],
     {
-      tags: [`org-${slug}`, "orgs"],
+      tags: [`org-slug-${slug}`, `org-${slug}`, "orgs"],
       revalidate: 3600, // 1 hour
     }
-  )();
+  )()
+);
 
-export const getCachedBoard = (boardId: string, orgId: string) =>
+export const getCachedBoard = cache((boardId: string, orgId: string) =>
   unstable_cache(
     async () => {
       return prisma.board.findFirst({
@@ -37,6 +39,7 @@ export const getCachedBoard = (boardId: string, orgId: string) =>
     [`board-${boardId}`],
     {
       tags: [`board-${boardId}`, `org-${orgId}-boards`],
-      revalidate: 60,
+      revalidate: 60, // 1 minute
     }
-  )();
+  )()
+);
