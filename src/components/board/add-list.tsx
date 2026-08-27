@@ -4,6 +4,7 @@ import { createList } from "@/actions/lists-action";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -16,6 +17,8 @@ export default function AddList({ boardId, orgId }: AddListProps) {
     const [isAddingList, setIsAddingList] = useState(false);
     const [newListName, setNewListName] = useState("");
     const [loading, setLoading] = useState(false);
+
+    const router = useRouter()
 
     const handleCreateList = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -31,6 +34,7 @@ export default function AddList({ boardId, orgId }: AddListProps) {
             await createList(formData);
             setNewListName("");
             setIsAddingList(false);
+            router.refresh();
             toast.success("List created successfully");
         } catch (err) {
             toast.error(err instanceof Error ? err.message : "Failed to create list");
