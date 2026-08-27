@@ -31,8 +31,8 @@ export default function CardDetailModal({ card, boardId, onClose, canEdit = true
     assigneeId: card.assigneeId || "",
   });
 
-  const members=useOrgMembers()
-  console.log(members)
+  const members = useOrgMembers()
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -98,28 +98,28 @@ export default function CardDetailModal({ card, boardId, onClose, canEdit = true
           <div className="flex items-center gap-1">
             {canEdit && (
               <AlertDialog>
-              <AlertDialogTrigger
-                disabled={deleting}
-                className="h-7 w-7 text-gray-400 hover:text-red-500 hover:bg-red-50"
-                title="Delete List"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </AlertDialogTrigger>
-              <AlertDialogContent className="sm:max-w-lg">
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Card</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete &quot;{card.title}&quot;, This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                <AlertDialogTrigger
+                  disabled={deleting}
+                  className="h-7 w-7 text-gray-400 hover:text-red-500 hover:bg-red-50"
+                  title="Delete List"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </AlertDialogTrigger>
+                <AlertDialogContent className="sm:max-w-lg">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Card</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete &quot;{card.title}&quot;, This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
             <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 text-gray-400">
               <X className="h-4 w-4" />
