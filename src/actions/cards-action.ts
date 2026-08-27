@@ -10,7 +10,7 @@ import {
   deleteCardSchema,
 } from "@/lib/validations";
 import { ActivityType } from "@/types";
-import { revalidatePath } from "next/cache";
+import { updateTag } from "next/cache";
 
 export async function createCard(formData: FormData) {
   const dueDateRaw = formData.get("dueDate") as string;
@@ -58,7 +58,9 @@ export async function createCard(formData: FormData) {
     message: `created card "${parsed.title}"`,
   });
 
-  revalidatePath(`/${org.slug}/boards/${parsed.boardId}`);
+  updateTag(`board-${board.id}`);
+  updateTag(`org-${org.id}-boards`);
+
   return {
     success: true,
   };
@@ -107,7 +109,9 @@ export async function updateCardDetails(
     message,
   });
 
-  revalidatePath(`/${org.slug}/boards/${boardId}`);
+  updateTag(`board-${board.id}`);
+  updateTag(`org-${org.id}-boards`);
+
   return {
     success: true,
   };
@@ -180,7 +184,8 @@ export async function addComment(
     message: `added comment on card "${card.title}"`,
   });
 
-  revalidatePath(`/${org.slug}/boards/${parsed.boardId}`);
+  updateTag(`board-${board.id}`);
+  updateTag(`org-${org.id}-boards`);
 
   return {
     id: comment.id,
@@ -214,5 +219,6 @@ export async function deleteCard(cardId: string, boardId: string, orgId: string)
     message: `deleted card "${card.title}"`,
   });
 
-  revalidatePath(`/${org.slug}/boards/${parsed.boardId}`);
+  updateTag(`board-${board.id}`);
+  updateTag(`org-${org.id}-boards`);
 }
