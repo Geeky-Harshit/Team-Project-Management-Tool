@@ -36,7 +36,9 @@ export async function createBoard(formData: FormData) {
     message: `created board "${parsed.name}"`,
   });
 
+  updateTag(`board-${board.id}`);
   updateTag(`org-${org.id}-boards`);
+
   return {
     success: true,
   };
