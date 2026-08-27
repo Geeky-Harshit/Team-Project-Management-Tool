@@ -5,7 +5,7 @@ import { WorkspaceActivityFeed } from "@/components/dashboard/workspace-activity
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
 import { getCachedOrgBySlug } from "@/lib/data-cache";
 import { prisma } from "@/lib/prisma";
-import { Activity, ActivityType, Card, WorkloadEntry } from "@/types";
+import { Activity } from "@/types";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -29,107 +29,118 @@ export default async function OrgDashboardPage({
 }: {
   params: Promise<{ orgSlug: string }>;
 }) {
+
   const { orgSlug } = await params;
-
-  const org = await prisma.organization.findUnique({
-    where: { slug: orgSlug },
-  });
+  const org = await getCachedOrgBySlug(orgSlug);
   if (!org) notFound();
-
-  await validateOrgAccess(org.id, "viewer");
+  await validateOrgAccess(org.id, "viewer", org);
 
   // Fetch data in batch via Prisma
   // Fetch boards (with lists and cards) and activities concurrently
-  const [boards, rawActivities] = await Promise.all([
-    prisma.board.findMany({
-      where: { organizationId: org.id, archived: false },
-      include: {
-        lists: {
-          where: { archived: false },
-          include: {
-            cards: {
-              where: { archived: false },
+  const now = new Date();
+  const orgCardWhere = {
+    archived: false,
+    list: {
+      archived: false,
+      board: { organizationId: org.id, archived: false },
+    },
+  };
+
+  const [boardsCount, tasksCount, overdueCount, overdueCards, workloadGroups, rawActivities, users] =
+    await Promise.all([
+      prisma.board.count({
+        where: { organizationId: org.id, archived: false },
+      }),
+      prisma.card.count({ where: orgCardWhere }),
+      prisma.card.count({
+        where: { ...orgCardWhere, dueDate: { lt: now } },
+      }),
+      prisma.card.findMany({
+        where: { ...orgCardWhere, dueDate: { lt: now } },
+        orderBy: { dueDate: "asc" },
+        take: 50, // UI list, not the whole org
+        select: {
+          id: true,
+          listId: true,
+          title: true,
+          description: true,
+          assigneeId: true,
+          dueDate: true,
+          position: true,
+          archived: true,
+          createdBy: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
+      prisma.card.groupBy({
+        by: ["assigneeId"],
+        where: orgCardWhere,
+        _count: { _all: true },
+      }),
+      prisma.activity.findMany({
+        where: { organizationId: org.id },
+        take: 30,
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.user.findMany({
+        where: {
+          members: {
+            some: {
+              organizationId: org.id,
             },
           },
         },
-      },
-    }),
-    prisma.activity.findMany({
-      where: { organizationId: org.id },
-      take: 30,
-      orderBy: { createdAt: "desc" },
-    }),
-  ]);
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      }),
+    ]);
 
-  const rawCards = boards.flatMap((b) => b.lists.flatMap((l) => l.cards));
-
-
-  const allCards: Card[] = rawCards.map((c) => ({
-    id: c.id,
-    listId: c.listId,
-    title: c.title,
-    description: c.description || "",
-    dueDate: c.dueDate ? c.dueDate.toISOString() : null,
-    assigneeId: c.assigneeId || null,
-    position: c.position,
-    archived: c.archived ?? false,
-    createdBy: c.createdBy,
-    createdAt: c.createdAt.toISOString(),
-    updatedAt: c.updatedAt.toISOString(),
+  const overdue = overdueCards.map((card) => ({
+    id: card.id,
+    listId: card.listId,
+    title: card.title,
+    description: card.description ?? "",
+    assigneeId: card.assigneeId,
+    dueDate: card.dueDate?.toISOString() ?? null,
+    position: card.position,
+    archived: card.archived,
+    createdBy: card.createdBy,
+    createdAt: card.createdAt.toISOString(),
+    updatedAt: card.updatedAt.toISOString(),
   }));
 
-  const activities: Activity[] = rawActivities.map((a) => ({
-    id: a.id,
-    organizationId: a.organizationId,
-    boardId: a.boardId || null,
-    cardId: a.cardId || null,
-    actorId: a.actorId,
-    type: a.type as ActivityType,
-    message: a.message,
-    createdAt: a.createdAt.toISOString(),
-  }));
+  const userMap = new Map(users.map((u) => [u.id, u]));
 
-  const now = new Date();
-  const overdue = allCards.filter((c) => c.dueDate && new Date(c.dueDate) < now);
-
-  // Resolve user names & emails for assignees via Prisma
-  const assigneeIds = Array.from(
-    new Set(allCards.map((c) => c.assigneeId).filter(Boolean))
-  ) as string[];
-
-  const userMap = new Map<string, { name: string; email: string }>();
-  if (assigneeIds.length > 0) {
-    const users = await prisma.user.findMany({
-      where: { id: { in: assigneeIds } },
-      select: { id: true, name: true, email: true },
-    });
-
-    users.forEach((u) => {
-      userMap.set(u.id, { name: u.name || "User", email: u.email });
-    });
-  }
-
-  const workloadMap = new Map<string, { name: string; email?: string; count: number }>();
-  allCards.forEach((card) => {
-    if (!card.assigneeId) {
-      const current = workloadMap.get("unassigned") || { name: "Unassigned", count: 0 };
-      workloadMap.set("unassigned", { ...current, count: current.count + 1 });
-    } else {
-      const user = userMap.get(card.assigneeId);
-      const key = card.assigneeId;
-      const current = workloadMap.get(key) || {
-        name: user?.name || "Unknown Member",
-        email: user?.email,
-        count: 0,
+  const workloadEntries = workloadGroups.map((group) => {
+    if (!group.assigneeId) {
+      return {
+        assignee: "Unassigned",
+        count: group._count._all,
       };
-      workloadMap.set(key, { ...current, count: current.count + 1 });
     }
+
+    const user = userMap.get(group.assigneeId);
+
+    return {
+      assignee: user?.name ?? "Unknown Member",
+      email: user?.email,
+      count: group._count._all,
+    };
   });
 
-  const workloadEntries: WorkloadEntry[] = Array.from(workloadMap.values()).map((entry) => ({
-    assignee: entry.name,
-    email: entry.email,
-    count: entry.count,
+  const activities: Activity[] = rawActivities.map((activity) => ({
+    id: activity.id,
+    organizationId: activity.organizationId,
+    boardId: activity.boardId,
+    cardId: activity.cardId,
+    actorId: activity.actorId,
+    type: activity.type as Activity['type'],
+    message: activity.message,
+    createdAt: activity.createdAt.toISOString(),
   }));
 
   return (
@@ -140,9 +151,9 @@ export default async function OrgDashboardPage({
       </div>
 
       <DashboardStats
-        boardsCount={boards.length}
-        tasksCount={allCards.length}
-        overdueCount={overdue.length}
+        boardsCount={boardsCount}
+        tasksCount={tasksCount || 0}
+        overdueCount={overdueCount || 0}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
