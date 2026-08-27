@@ -8,7 +8,7 @@ import {
   renameListSchema,
   deleteListSchema,
 } from "@/lib/validations";
-import { revalidatePath } from "next/cache";
+import { updateTag } from "next/cache";
 
 export async function createList(formData: FormData) {
   const parsed = createListSchema.parse({
@@ -46,14 +46,15 @@ export async function createList(formData: FormData) {
     message: `created list "${parsed.name}" on board "${board.name}"`,
   });
 
-  revalidatePath(`/${org.slug}/boards/${parsed.boardId}`);
+  updateTag(`board-${parsed.boardId}`);
+  updateTag(`org-${org.id}-boards`);
 }
 
 export async function renameList(
   listId: string,
   boardId: string,
   orgId: string,
-  newName: string
+  newName: string,
 ) {
   const parsed = renameListSchema.parse({ listId, boardId, orgId, newName });
   const { user, org } = await validateOrgAccess(parsed.orgId, "member");
@@ -76,13 +77,14 @@ export async function renameList(
     message: `renamed list to "${parsed.newName}" on board "${board.name}"`,
   });
 
-  revalidatePath(`/${org.slug}/boards/${parsed.boardId}`);
+  updateTag(`board-${parsed.boardId}`);
+  updateTag(`org-${org.id}-boards`);
 }
 
 export async function deleteList(
   listId: string,
   boardId: string,
-  orgId: string
+  orgId: string,
 ) {
   const parsed = deleteListSchema.parse({ listId, boardId, orgId });
   const { user, org } = await validateOrgAccess(parsed.orgId, "member");
@@ -104,5 +106,6 @@ export async function deleteList(
     message: `deleted list "${list.name}" on board "${board.name}"`,
   });
 
-  revalidatePath(`/${org.slug}/boards/${parsed.boardId}`);
+  updateTag(`board-${parsed.boardId}`);
+  updateTag(`org-${org.id}-boards`);
 }
