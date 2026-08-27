@@ -1,5 +1,6 @@
 import BoardView from "@/components/board/board-view";
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
+import { getCachedBoard, getCachedOrgBySlug } from "@/lib/data-cache";
 import { prisma } from "@/lib/prisma";
 import { Card as ICard, List as IList, MemberUser as IMember } from "@/types";
 import type { Metadata } from "next";
@@ -13,12 +14,11 @@ interface PageProps {
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  const { boardId } = await params;
-  const board = await prisma.board.findFirst({
-    where: { id: boardId, archived: false },
-    select: { name: true },
-  });
+  const { orgSlug, boardId } = await params;
+  const org = await getCachedOrgBySlug(orgSlug);
+  if (!org) return { title: "Board Not Found" };
 
+  const board = await getCachedBoard(boardId, org.id);
   if (!board) return { title: "Board Not Found" };
 
   return {
@@ -31,48 +31,23 @@ export async function generateMetadata({
 export default async function BoardPage({ params }: PageProps) {
   const { orgSlug, boardId } = await params;
 
-  // Step 1: Resolve organization
-  const org = await prisma.organization.findUnique({
-    where: { slug: orgSlug },
-  });
+  // Step 1: Resolve organization (cached)
+  const org = await getCachedOrgBySlug(orgSlug);
   if (!org) notFound();
 
-  // Step 2: Validate access using preloaded org (saves 1 DB round-trip)
+  // Step 2: Validate access
   const { role } = await validateOrgAccess(org.id, "viewer", org);
   const canEdit = role === "owner" || role === "admin" || role === "member";
   const isAdmin = role === "owner" || role === "admin";
 
-  // Step 3: Fetch Board (with Lists & Cards) and Org Members in PARALLEL
+  // Step 3: Fetch Board (cached) and Org Members in PARALLEL
   const [board, orgMembers] = await Promise.all([
-    prisma.board.findFirst({
-      where: {
-        id: boardId,
-        organizationId: org.id,
-        archived: false,
-      },
-      include: {
-        lists: {
-          where: { archived: false },
-          orderBy: { position: "asc" },
-          include: {
-            cards: {
-              where: { archived: false },
-              orderBy: { position: "asc" },
-            },
-          },
-        },
-      },
-    }),
+    getCachedBoard(boardId, org.id),
     prisma.member.findMany({
       where: { organizationId: org.id },
       include: {
         user: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
-            email: true,
-          },
+          select: { id: true, name: true, email: true, image: true },
         },
       },
     }),
@@ -80,54 +55,52 @@ export default async function BoardPage({ params }: PageProps) {
 
   if (!board) notFound();
 
-  // Step 4: Map organization members for assignee filters and modals
-  const allOrgMembers: IMember[] = orgMembers.map((m) => ({
+  const members: IMember[] = orgMembers.map((m) => ({
     id: m.user.id,
-    name: m.user.name || "Member",
+    name: m.user.name,
     email: m.user.email,
     image: m.user.image,
   }));
 
-  // Step 5: Serialize lists and cards across client boundary
-  const rawLists = board.lists;
-  const rawCards = rawLists.flatMap((l) => l.cards);
-
-  const lists: IList[] = rawLists.map((l) => ({
+  const lists: IList[] = board.lists.map((l) => ({
     id: l.id,
     boardId: l.boardId,
     name: l.name,
     position: l.position,
-    archived: l.archived ?? false,
+    archived: l.archived,
     createdAt: l.createdAt.toISOString(),
     updatedAt: l.updatedAt.toISOString(),
   }));
 
-  const cards: ICard[] = rawCards.map((c) => ({
-    id: c.id,
-    listId: c.listId,
-    title: c.title,
-    description: c.description || "",
-    dueDate: c.dueDate ? c.dueDate.toISOString() : null,
-    assigneeId: c.assigneeId || null,
-    position: c.position,
-    archived: c.archived ?? false,
-    createdBy: c.createdBy,
-    createdAt: c.createdAt.toISOString(),
-    updatedAt: c.updatedAt.toISOString(),
-  }));
+  const cards: ICard[] = board.lists.flatMap((l) =>
+    l.cards.map((c) => ({
+      id: c.id,
+      listId: c.listId,
+      title: c.title,
+      description: c.description || "",
+      assigneeId: c.assigneeId,
+      dueDate: c.dueDate ? c.dueDate.toISOString() : null,
+      position: c.position,
+      archived: c.archived,
+      createdBy: c.createdBy,
+      createdAt: c.createdAt.toISOString(),
+      updatedAt: c.updatedAt.toISOString(),
+    }))
+  );
 
+  const now = new Date();
   const overdueCount = cards.filter(
-    (c) => c.dueDate && new Date(c.dueDate) < new Date()
+    (c) => c.dueDate && new Date(c.dueDate) < now && !c.archived
   ).length;
 
   return (
     <BoardView
-      boardId={boardId}
+      boardId={board.id}
       boardName={board.name}
       canEdit={canEdit}
       lists={lists}
       cards={cards}
-      members={allOrgMembers}
+      members={members}
       orgName={org.name}
       overdueCount={overdueCount}
       isAdmin={isAdmin}
