@@ -1,59 +1,36 @@
-import BoardHeader from "@/components/board/board-header";
-import { KanbanBoard } from "@/components/board/kanban-board";
 import { OrgMembersProvider } from "@/context/org-members-context";
 import { Card as ICard, List as IList, MemberUser as IMember } from "@/types";
-import { useMemo, useState } from "react";
+import { BoardClient } from "./board-client";
 
 interface BoardViewProps {
   boardId: string;
   boardName: string;
   canEdit: boolean;
+  isAdmin?: boolean;
   lists: IList[];
   cards: ICard[];
   members: IMember[];
   orgName: string;
   overdueCount: number;
-  isAdmin?: boolean;
 }
 
 export default function BoardView({
   boardId,
   boardName,
   canEdit,
+  isAdmin,
   lists,
   cards,
-  members, // all org members
+  members,
   orgName,
   overdueCount,
-  isAdmin,
 }: BoardViewProps) {
-  const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-
-  // Filter Only members who have at least 1 card assigned on THIS board
-  const boardMembers = useMemo(() => {
-    const assigneeIdsOnThisBoard = new Set(
-      cards.map((c) => c.assigneeId).filter(Boolean)
-    );
-    return members.filter((m) => assigneeIdsOnThisBoard.has(m.id));
-  }, [cards, members]);
-
   return (
     <OrgMembersProvider members={members}>
-      <div className="mx-auto flex h-full w-full max-w-7xl flex-col gap-6 p-4 md:p-6">
+      <div className="mx-auto flex h-full w-full max-w-7xl flex-col gap-6 p-4 md:p-6 font-sans">
+        {/* Stats Grid rendered on Server — never re-renders on search */}
         <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-          <BoardHeader
-            boardId={boardId}
-            initialName={boardName}
-            canEdit={canEdit}
-            isAdmin={isAdmin}
-            members={boardMembers}
-            selectedAssigneeId={selectedAssigneeId}
-            onSelectAssignee={setSelectedAssigneeId}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-          />
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-4">
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Lists</p>
               <p className="mt-1 text-xl font-bold text-gray-900">{lists.length}</p>
@@ -71,16 +48,15 @@ export default function BoardView({
               <p className="mt-1 truncate text-sm font-semibold text-gray-900">{orgName}</p>
             </div>
           </div>
-        </section>
 
-        <section className="min-h-0 flex-1 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm md:p-5">
-          <KanbanBoard
-            initialLists={lists}
-            initialCards={cards}
+          <BoardClient
             boardId={boardId}
+            boardName={boardName}
             canEdit={canEdit}
-            selectedAssigneeId={selectedAssigneeId}
-            searchQuery={searchQuery}
+            isAdmin={isAdmin}
+            lists={lists}
+            cards={cards}
+            members={members}
           />
         </section>
       </div>

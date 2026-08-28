@@ -3,7 +3,8 @@ import { canEditCards, canManageOrg } from "@/lib/auth/permissions";
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
 import { getCachedBoard, getCachedOrgBySlug } from "@/lib/data-cache";
 import { prisma } from "@/lib/prisma";
-import { Card as ICard, List as IList, MemberUser as IMember } from "@/types";
+import { toCard, toList } from "@/lib/serialize";
+import { MemberUser as IMember } from "@/types";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -63,31 +64,8 @@ export default async function BoardPage({ params }: PageProps) {
     image: m.user.image,
   }));
 
-  const lists: IList[] = board.lists.map((l) => ({
-    id: l.id,
-    boardId: l.boardId,
-    name: l.name,
-    position: l.position,
-    archived: l.archived,
-    createdAt: l.createdAt.toISOString(),
-    updatedAt: l.updatedAt.toISOString(),
-  }));
-
-  const cards: ICard[] = board.lists.flatMap((l) =>
-    l.cards.map((c) => ({
-      id: c.id,
-      listId: c.listId,
-      title: c.title,
-      description: c.description || "",
-      assigneeId: c.assigneeId,
-      dueDate: c.dueDate ? c.dueDate.toISOString() : null,
-      position: c.position,
-      archived: c.archived,
-      createdBy: c.createdBy,
-      createdAt: c.createdAt.toISOString(),
-      updatedAt: c.updatedAt.toISOString(),
-    }))
-  );
+  const lists = board.lists.map(toList);
+  const cards = board.lists.flatMap((l) => l.cards.map(toCard));
 
   const now = new Date();
   const overdueCount = cards.filter(

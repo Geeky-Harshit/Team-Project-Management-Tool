@@ -13,7 +13,8 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import CardItem from "./card-item";
 import ListColumn from "./list-column";
@@ -42,10 +43,13 @@ export default function KanbanDndProvider({
   searchQuery = "",
   onOpenCard,
 }: KanbanDndProviderProps) {
+  const router = useRouter();
   const [, startTransition] = useTransition();
   const [mounted, setMounted] = useState(false);
   const [activeDragCard, setActiveDragCard] = useState<Card | null>(null);
   const [dragRotation, setDragRotation] = useState(0);
+  const lastOverListId = useRef<string | null>(null);
+  const preDragCards = useRef<Card[] | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -54,74 +58,87 @@ export default function KanbanDndProvider({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 },
-    })
+    }),
   );
 
-  const sortedLists = sortByPosition(initialLists);
+  const sortedLists = useMemo(
+    () => sortByPosition(initialLists),
+    [initialLists],
+  );
 
-  const patchListOrder = (listId: string, orderedCards: Card[]) => {
-    startTransition(async () => {
-      try {
-        const res = await fetch(`/api/boards/${boardId}/cards`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            listId,
-            cardIds: orderedCards.map((c) => c.id),
-          }),
-        });
+  const cardsByListId = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    const map = new Map<string, Card[]>();
 
-        if (res.ok) {
-          showActivityToast("CARD_MOVED");
-        } else {
-          toast.error("Failed to save card order");
-        }
-      } catch (err) {
-        console.error("Failed to persist card order:", err);
-        toast.error("Failed to save card order");
+    for (const list of sortedLists) {
+      map.set(list.id, []);
+    }
+
+    for (const card of cards) {
+      if (selectedAssigneeId && card.assigneeId !== selectedAssigneeId) continue;
+      if (
+        query &&
+        !card.title.toLowerCase().includes(query) &&
+        !(card.description && card.description.toLowerCase().includes(query))
+      ) {
+        continue;
       }
-    });
+      const bucket = map.get(card.listId);
+      if (bucket) bucket.push(card);
+      else map.set(card.listId, [card]);
+    }
+
+    for (const [listId, listCards] of map) {
+      map.set(listId, sortByPosition(listCards));
+    }
+
+    return map;
+  }, [cards, sortedLists, selectedAssigneeId, searchQuery]);
+
+  const rollback = (snapshot: Card[] | null, message: string) => {
+    if (snapshot) setCards(snapshot);
+    toast.error(message);
+    router.refresh();
   };
 
-  const patchMoveAcrossLists = (
-    cardId: string,
-    sourceListId: string,
-    targetListId: string,
-    sourceCardIds: string[],
-    targetCardIds: string[]
+  const patchCards = (
+    body: Record<string, unknown>,
+    snapshot: Card[] | null,
+    errorMessage: string,
   ) => {
     startTransition(async () => {
       try {
         const res = await fetch(`/api/boards/${boardId}/cards`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            cardId,
-            sourceListId,
-            targetListId,
-            sourceCardIds,
-            targetCardIds,
-          }),
+          body: JSON.stringify(body),
         });
 
-        if (res.ok) {
-          showActivityToast("CARD_MOVED");
-        } else {
-          toast.error("Failed to move card");
+        if (!res.ok) {
+          const detail = await res
+            .json()
+            .then((data) => data?.error)
+            .catch(() => null);
+          console.error("Card PATCH failed:", res.status, detail);
+          rollback(snapshot, errorMessage);
+          return;
         }
+
+        showActivityToast("CARD_MOVED");
       } catch (err) {
-        console.error("Failed to persist card move across lists:", err);
-        toast.error("Failed to move card");
+        console.error("Card PATCH request failed:", err);
+        rollback(snapshot, errorMessage);
       }
     });
   };
-
 
   const handleDragStart = (event: DragStartEvent) => {
     if (!canEdit) return;
     const { active } = event;
     const card = cards.find((c) => c.id === active.id) || null;
     setActiveDragCard(card);
+    lastOverListId.current = card?.listId ?? null;
+    preDragCards.current = cards;
     setDragRotation((Math.random() - 0.5) * 6);
   };
 
@@ -139,25 +156,18 @@ export default function KanbanDndProvider({
 
     const isOverAColumn = sortedLists.some((l) => l.id === overId);
     const overCard = cards.find((c) => c.id === overId);
+    const overListId = isOverAColumn ? overId : overCard?.listId;
+    if (!overListId || activeCard.listId === overListId) return;
+    if (lastOverListId.current === overListId) return;
 
-    if (isOverAColumn) {
-      if (activeCard.listId === overId) return;
-      setCards((prev) =>
-        prev.map((c) => (c.id === activeId ? { ...c, listId: overId } : c))
-      );
-      return;
-    }
-
-    if (overCard && activeCard.listId !== overCard.listId) {
-      setCards((prev) =>
-        prev.map((c) =>
-          c.id === activeId ? { ...c, listId: overCard.listId } : c
-        )
-      );
-    }
+    lastOverListId.current = overListId;
+    setCards((prev) =>
+      prev.map((c) => (c.id === activeId ? { ...c, listId: overListId } : c)),
+    );
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
+    lastOverListId.current = null;
     if (!canEdit) {
       setActiveDragCard(null);
       return;
@@ -179,7 +189,7 @@ export default function KanbanDndProvider({
     if (!targetListId) return;
 
     const targetListCards = cards.filter(
-      (c) => c.listId === targetListId && c.id !== activeId
+      (c) => c.listId === targetListId && c.id !== activeId,
     );
 
     let newIndex = targetListCards.length;
@@ -197,9 +207,12 @@ export default function KanbanDndProvider({
       position: (i + 1) * 1000,
     }));
 
+    const snapshot = preDragCards.current;
+    preDragCards.current = null;
+
     setCards((prev) => {
       const unaffected = prev.filter(
-        (c) => c.listId !== targetListId && c.id !== activeId
+        (c) => c.listId !== targetListId && c.id !== activeId,
       );
       return [...unaffected, ...reorderedWithPositions];
     });
@@ -209,15 +222,26 @@ export default function KanbanDndProvider({
         .filter((c) => c.listId === activeDragCard.listId && c.id !== activeId)
         .sort((a, b) => a.position - b.position);
 
-      patchMoveAcrossLists(
-        activeId,
-        activeDragCard.listId,
-        targetListId,
-        sourceListCards.map((c) => c.id),
-        reorderedWithPositions.map((c) => c.id)
+      patchCards(
+        {
+          cardId: activeId,
+          sourceListId: activeDragCard.listId,
+          targetListId,
+          sourceCardIds: sourceListCards.map((c) => c.id),
+          targetCardIds: reorderedWithPositions.map((c) => c.id),
+        },
+        snapshot,
+        "Failed to move card",
       );
     } else {
-      patchListOrder(targetListId, reorderedWithPositions);
+      patchCards(
+        {
+          listId: targetListId,
+          cardIds: reorderedWithPositions.map((c) => c.id),
+        },
+        snapshot,
+        "Failed to save card order",
+      );
     }
   };
 
@@ -231,38 +255,17 @@ export default function KanbanDndProvider({
       onDragEnd={handleDragEnd}
     >
       <div className="flex flex-1 items-start gap-4 overflow-x-auto pb-4 pt-1 font-sans">
-        {sortedLists.map((list) => {
-          let listCards = sortByPosition(
-            cards.filter((c) => c.listId === list.id)
-          );
-
-          if (selectedAssigneeId) {
-            listCards = listCards.filter(
-              (c) => c.assigneeId === selectedAssigneeId
-            );
-          }
-
-          if (searchQuery.trim()) {
-            const query = searchQuery.toLowerCase();
-            listCards = listCards.filter(
-              (c) =>
-                c.title.toLowerCase().includes(query) ||
-                (c.description && c.description.toLowerCase().includes(query))
-            );
-          }
-
-          return (
-            <ListColumn
-              key={list.id}
-              list={list}
-              cards={listCards}
-              boardId={boardId}
-              onOpenCard={onOpenCard}
-              dndEnabled={mounted && canEdit}
-              canEdit={canEdit}
-            />
-          );
-        })}
+        {sortedLists.map((list) => (
+          <ListColumn
+            key={list.id}
+            list={list}
+            cards={cardsByListId.get(list.id) ?? []}
+            boardId={boardId}
+            onOpenCard={onOpenCard}
+            dndEnabled={mounted && canEdit}
+            canEdit={canEdit}
+          />
+        ))}
       </div>
 
       <DragOverlay dropAnimation={null}>
@@ -276,7 +279,7 @@ export default function KanbanDndProvider({
           >
             <CardItem
               card={activeDragCard}
-              onClick={() => { }}
+              onClick={() => {}}
               dndEnabled={false}
               isOverlay
               rotation={dragRotation}

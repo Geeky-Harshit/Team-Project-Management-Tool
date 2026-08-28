@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, List } from "@/types";
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import EmptyBoard from "./empty-board";
 import KanbanDndProvider from "./kanban-dnd-provider";
 import CardDetailModal from "./card-detail-modal";
@@ -15,6 +15,13 @@ interface KanbanBoardProps {
   canEdit?: boolean;
   selectedAssigneeId?: string | null;
   searchQuery?: string;
+}
+
+function cardsFingerprint(cards: Card[]) {
+  return cards
+    .map((c) => `${c.id}:${c.listId}:${c.position}:${c.title}:${c.updatedAt}`)
+    .sort()
+    .join("|");
 }
 
 export function KanbanBoard({
@@ -31,8 +38,16 @@ export function KanbanBoard({
   const [activeCardModal, setActiveCardModal] = useState<Card | null>(null);
 
   useEffect(() => {
-    setCards(initialCards);
+    setCards((prev) =>
+      cardsFingerprint(prev) === cardsFingerprint(initialCards)
+        ? prev
+        : initialCards,
+    );
   }, [initialCards]);
+
+  const onOpenCard = useCallback((card: Card) => {
+    setActiveCardModal(card);
+  }, []);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -51,7 +66,7 @@ export function KanbanBoard({
           canEdit={canEdit}
           selectedAssigneeId={selectedAssigneeId}
           searchQuery={searchQuery}
-          onOpenCard={setActiveCardModal}
+          onOpenCard={onOpenCard}
         />
       )}
 

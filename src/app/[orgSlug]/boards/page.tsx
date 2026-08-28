@@ -161,7 +161,7 @@ export default async function BoardsPage({ params }: PageProps) {
         </div>
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {canCreate && <CreateBoardCard organizationId={org.id} orgSlug={org.slug} />}
+          {canCreate && <CreateBoardCard organizationId={org.id} />}
 
           {boards.map((board) => {
             const stats = boardStats.find((s) => s.boardId === board.id);

@@ -5,7 +5,7 @@ import { requireRole } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
 import { createCardApiSchema, updateCardsPatchSchema } from "@/lib/validations";
 import { Board, Role } from "@/types";
-import { updateTag } from "next/cache";
+import { revalidateTag } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
 
@@ -31,9 +31,14 @@ function routeError(err: unknown) {
   return jsonError(message, 400);
 }
 
+// updateTag throws outside Server Actions, so route handlers must use
+// revalidateTag. The zero profile makes it an immediate hard invalidation
+// instead of a stale-while-revalidate window.
+const IMMEDIATE = { stale: 0, revalidate: 0, expire: 0 };
+
 function invalidateBoardCache(board: Pick<Board, "id" | "organizationId">) {
-  updateTag(`board-${board.id}`);
-  updateTag(`org-${board.organizationId}-boards`);
+  revalidateTag(`board-${board.id}`, IMMEDIATE);
+  revalidateTag(`org-${board.organizationId}-boards`, IMMEDIATE);
 }
 
 async function checkBoardAccess(
@@ -216,7 +221,8 @@ export async function PATCH(
           UPDATE "card"
           SET
             "listId" = CASE "id" ${Prisma.join(listIdCases, " ")} ELSE "listId" END,
-            "position" = CASE "id" ${Prisma.join(positionCases, " ")} ELSE "position" END
+            "position" = CASE "id" ${Prisma.join(positionCases, " ")} ELSE "position" END,
+            "updatedAt" = NOW()
           WHERE "id" IN (${Prisma.join(allIds)})
         `;
       }
@@ -250,7 +256,9 @@ export async function PATCH(
 
       await prisma.$executeRaw`
         UPDATE "card"
-        SET "position" = CASE "id" ${sqlPositionCases(payload.cardIds)} ELSE "position" END
+        SET
+          "position" = CASE "id" ${sqlPositionCases(payload.cardIds)} ELSE "position" END,
+          "updatedAt" = NOW()
         WHERE "id" IN (${Prisma.join(payload.cardIds)})
           AND "listId" = ${payload.listId}
       `;
