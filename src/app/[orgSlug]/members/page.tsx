@@ -1,6 +1,8 @@
 import MembersClient from "@/components/members/members-client";
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
 import { getCachedOrgBySlug } from "@/lib/data-cache";
+import { prisma } from "@/lib/prisma";
+import { Invite, MemberWithUser, Role } from "@/types";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -28,11 +30,55 @@ export default async function MembersPage({ params }: PageProps) {
   const { user, role } = await validateOrgAccess(org.id, "viewer", org);
   const isAdmin = role === "admin" || role === "owner";
 
+  // Fetch members and pending invites in parallel directly on the server (0ms client delay!)
+  const [dbMembers, dbInvites] = await Promise.all([
+    prisma.member.findMany({
+      where: { organizationId: org.id },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true, image: true },
+        },
+      },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.invitation.findMany({
+      where: {
+        organizationId: org.id,
+        status: "pending",
+      },
+      orderBy: { expiresAt: "desc" },
+    }),
+  ]);
+
+  const initialMembers: MemberWithUser[] = dbMembers.map((m) => ({
+    id: m.id,
+    role: m.role as Role,
+    createdAt: m.createdAt.toISOString(),
+    user: {
+      id: m.user.id,
+      name: m.user.name,
+      email: m.user.email,
+      image: m.user.image,
+    },
+  }));
+
+  const initialInvites: Invite[] = dbInvites.map((inv) => ({
+    id: inv.id,
+    organizationId: inv.organizationId,
+    email: inv.email,
+    role: inv.role as Role,
+    invitedBy: inv.inviterId,
+    status: inv.status,
+    expiresAt: inv.expiresAt.toISOString(),
+  }));
+
   return (
     <MembersClient
       orgId={org.id}
       isAdmin={isAdmin}
       currentUserId={user.id}
+      initialMembers={initialMembers}
+      initialInvites={initialInvites}
     />
   );
 }
