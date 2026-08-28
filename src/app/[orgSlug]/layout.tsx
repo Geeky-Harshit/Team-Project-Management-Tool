@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import Sidebar from "@/components/sidebar";
 import { OrgProvider } from "@/context/org-context";
 import OrgNotFoundPage from "./not-found";
+import { getCachedOrgBySlug } from "@/lib/data-cache";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -18,9 +19,7 @@ export default async function OrgLayout({ children, params }: LayoutProps) {
     redirect("/sign-in");
   }
 
-  const org = await prisma.organization.findUnique({
-    where: { slug: orgSlug },
-  });
+  const org = await getCachedOrgBySlug(orgSlug);
 
   if (!org) {
     return <OrgNotFoundPage />;
