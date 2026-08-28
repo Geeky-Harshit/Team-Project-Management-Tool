@@ -12,15 +12,19 @@ interface MembersClientProps {
   orgId: string;
   isAdmin: boolean;
   currentUserId: string;
+  initialMembers?: MemberWithUser[];
+  initialInvites?: Invite[];
 }
 
 export default function MembersClient({
   orgId,
   isAdmin,
   currentUserId,
+  initialMembers = [],
+  initialInvites = [],
 }: MembersClientProps) {
-  const [members, setMembers] = useState<MemberWithUser[]>([]);
-  const [invites, setInvites] = useState<Invite[]>([]);
+  const [members, setMembers] = useState<MemberWithUser[]>(initialMembers);
+  const [invites, setInvites] = useState<Invite[]>(initialInvites);
   const [removingInviteToken, setRemovingInviteToken] = useState<string | null>(null);
 
   const fetchMembers = useCallback(async () => {
@@ -59,8 +63,9 @@ export default function MembersClient({
     }
   }, [orgId]);
 
+  // Only run mount fetch if NO initial server data was provided
   useEffect(() => {
-    if (!orgId) return;
+    if (!orgId || initialMembers.length > 0) return;
     let isMounted = true;
 
     async function loadMembersAndInvites() {
@@ -100,7 +105,7 @@ export default function MembersClient({
     return () => {
       isMounted = false;
     };
-  }, [orgId]);
+  }, [orgId, initialMembers.length]);
 
   const handleRemoveMember = async (memberId: string) => {
     try {
