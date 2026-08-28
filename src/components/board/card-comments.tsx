@@ -85,26 +85,8 @@ export default function CardComments({
         newComment.trim(),
         replyToId
       );
-      const normalized: Comment =
-        "id" in created
-          ? (created as Comment)
-          : {
-            id: (created as { _id: { toString: () => string } })._id.toString(),
-            cardId,
-            authorId: (created as { authorId: string }).authorId,
-            content: (created as { content: string }).content,
-            parentId: (
-              created as { parentId?: { toString: () => string } | null }
-            ).parentId
-              ? (
-                created as { parentId: { toString: () => string } }
-              ).parentId.toString()
-              : null,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          };
 
-      setComments((prev) => [...prev, normalized]);
+      setComments((prev) => [...prev, created])
       setNewComment("");
       setReplyToId(null);
       toast.success("Comment added successfully");
