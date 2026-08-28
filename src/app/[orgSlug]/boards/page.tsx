@@ -1,5 +1,6 @@
 import CreateBoardCard from "@/components/create-board-card";
 import { Card } from "@/components/ui/card";
+import { canEditCards, canManageOrg } from "@/lib/auth/permissions";
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
 import { getCachedOrgBySlug } from "@/lib/data-cache";
 import { prisma } from "@/lib/prisma";
@@ -12,9 +13,7 @@ interface PageProps {
   params: Promise<{ orgSlug: string }>;
 }
 
-export async function generateMetadata({
-  params,
-}: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { orgSlug } = await params;
   const org = await getCachedOrgBySlug(orgSlug);
   if (!org) return { title: "Boards Not Found" };
@@ -28,15 +27,16 @@ export async function generateMetadata({
 export default async function BoardsPage({ params }: PageProps) {
   const { orgSlug } = await params;
 
-  const org = await prisma.organization.findUnique({
-    where: { slug: orgSlug },
-  });
+  // 1. Cached Org lookup
+  const org = await getCachedOrgBySlug(orgSlug);
   if (!org) notFound();
 
-  const { role } = await validateOrgAccess(org.id, "viewer");
-  const canManage = role === "owner" || role === "admin";
-  const canCreate = role === "owner" || role === "admin" || role === "member";
+  // 2. Access check with preloaded org
+  const { role } = await validateOrgAccess(org.id, "viewer", org);
+  const canManage = canManageOrg(role);
+  const canCreate = canEditCards(role);
 
+  // 3. Lightweight boards fetch with counts
   const boards = await prisma.board.findMany({
     where: {
       organizationId: org.id,
@@ -75,86 +75,57 @@ export default async function BoardsPage({ params }: PageProps) {
     };
   });
 
-  const totalBoards = boards.length;
-  const totalCards = boardStats.reduce((acc, b) => acc + b.cards, 0);
-  const totalOverdue = boardStats.reduce((acc, b) => acc + b.overdue, 0);
-
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 p-6 md:p-8">
-      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Workspace</p>
-        <h1 className="mt-2 text-3xl font-bold text-gray-900">Boards</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Manage planning spaces for this organization
-        </p>
-
-        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-            <p className="text-xs font-semibold text-gray-500">Active Boards</p>
-            <p className="mt-1 text-2xl font-bold text-gray-900">{totalBoards}</p>
-          </div>
-          <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-            <p className="text-xs font-semibold text-gray-500">Total Tasks</p>
-            <p className="mt-1 text-2xl font-bold text-gray-900">{totalCards}</p>
-          </div>
-          <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-            <p className="text-xs font-semibold text-gray-500">Overdue Tasks</p>
-            <p className="mt-1 text-2xl font-bold text-red-600">{totalOverdue}</p>
-          </div>
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 p-6 md:p-8 font-sans">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Boards</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Organize tasks, workflows, and milestones for {org.name}
+          </p>
         </div>
-      </section>
 
-      <section>
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">All Boards</h2>
-            <p className="text-xs text-gray-500">{boards.length} results</p>
-          </div>
-          {canManage && (
-            <Link
-              href={`/${orgSlug}/boards/archived`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50"
-            >
-              <Archive className="h-3.5 w-3.5 text-gray-500" />
-              Archived Boards
+        {canManage && (
+          <Link
+            href={`/${orgSlug}/boards/archived`}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 shadow-2xs transition hover:bg-gray-50"
+          >
+            <Archive className="h-4 w-4" />
+            Archived Boards
+          </Link>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {canCreate && <CreateBoardCard organizationId={org.id} orgSlug={org.slug} />}
+
+        {boards.map((board) => {
+          const stats = boardStats.find((s) => s.boardId === board.id);
+          return (
+            <Link key={board.id} href={`/${org.slug}/boards/${board.id}`} className="group block">
+              <Card className="flex h-44 flex-col justify-between border-gray-200 p-5 shadow-xs transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
+                <div>
+                  <h3 className="text-base font-bold text-gray-900 group-hover:text-primary transition">
+                    {board.name}
+                  </h3>
+                  <p className="mt-2 text-xs text-gray-500">
+                    {stats?.lists || 0} lists &bull; {stats?.cards || 0} tasks
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between border-t border-gray-100 pt-3 text-xs text-gray-400">
+                  <span>Updated {new Date(board.updatedAt).toLocaleDateString()}</span>
+                  {stats && stats.overdue > 0 && (
+                    <span className="font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded-full text-[11px]">
+                      {stats.overdue} overdue
+                    </span>
+                  )}
+                </div>
+              </Card>
             </Link>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {boards.map((board) => {
-            const stats = boardStats.find((s) => s.boardId === board.id);
-            return (
-              <Link key={board.id} href={`/${orgSlug}/boards/${board.id}`}>
-                <Card className="group h-44 cursor-pointer border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
-                  <div className="flex h-full flex-col justify-between">
-                    <div>
-                      <div className="inline-flex rounded-full border border-orange-200 bg-orange-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-orange-700">
-                        Board
-                      </div>
-                      <h3 className="mt-3 line-clamp-2 text-base font-semibold text-gray-900">
-                        {board.name}
-                      </h3>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-xs text-gray-600">
-                        <span className="rounded-md bg-gray-100 px-2 py-1">Lists: {stats?.lists ?? 0}</span>
-                        <span className="rounded-md bg-gray-100 px-2 py-1">Tasks: {stats?.cards ?? 0}</span>
-                      </div>
-                      <p className="text-xs text-gray-500">
-                        Created {new Date(board.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-              </Link>
-            );
-          })}
-
-          {canCreate && <CreateBoardCard organizationId={org.id} />}
-        </div>
-      </section>
+          );
+        })}
+      </div>
     </div>
   );
 }
