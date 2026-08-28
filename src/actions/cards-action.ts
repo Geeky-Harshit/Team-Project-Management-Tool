@@ -3,10 +3,12 @@
 import { logActivity } from "@/lib/activity-logger";
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
 import { prisma } from "@/lib/prisma";
+import { toComment } from "@/lib/serialize";
 import {
   createCardSchema,
   updateCardDetailsSchema,
   addCommentSchema,
+  cardScopeSchema,
   deleteCardSchema,
 } from "@/lib/validations";
 import { ActivityType } from "@/types";
@@ -117,6 +119,29 @@ export async function updateCardDetails(
   };
 }
 
+export async function getCardComments(
+  cardId: string,
+  boardId: string,
+  orgId: string,
+) {
+  const parsed = cardScopeSchema.parse({ cardId, boardId, orgId });
+  const { org } = await validateOrgAccess(parsed.orgId, "viewer");
+
+  const card = await prisma.card.findFirst({
+    where: {
+      id: parsed.cardId,
+      list: { boardId: parsed.boardId, board: { organizationId: org.id } },
+    },
+    select: {
+      comments: { orderBy: { createdAt: "asc" } },
+    },
+  });
+
+  if (!card) throw new Error("Card not found");
+
+  return card.comments.map(toComment);
+}
+
 export async function addComment(
   cardId: string,
   boardId: string,
@@ -134,23 +159,17 @@ export async function addComment(
 
   const { user, org } = await validateOrgAccess(parsed.orgId, "member");
 
-  const board = await prisma.board.findFirst({
-    where: {
-      id: parsed.boardId,
-      organizationId: org.id,
-    },
-  });
-
-  if (!board) {
-    throw new Error("Board access denied");
-  }
-
   const card = await prisma.card.findFirst({
     where: {
       id: parsed.cardId,
-      list: { boardId: board.id, archived: false },
       archived: false,
+      list: {
+        boardId: parsed.boardId,
+        archived: false,
+        board: { organizationId: org.id },
+      },
     },
+    select: { id: true, title: true },
   });
 
   if (!card) {
@@ -160,6 +179,7 @@ export async function addComment(
   if (parsed.parentId) {
     const parent = await prisma.comment.findFirst({
       where: { id: parsed.parentId, cardId: parsed.cardId },
+      select: { id: true },
     });
     if (!parent) {
       throw new Error("Invalid parent comment");
@@ -177,25 +197,17 @@ export async function addComment(
 
   await logActivity({
     organizationId: org.id,
-    boardId: board.id,
+    boardId: parsed.boardId,
     cardId: card.id,
     actorId: user.id,
     type: "COMMENT_ADDED",
     message: `added comment on card "${card.title}"`,
   });
 
-  updateTag(`board-${board.id}`);
+  updateTag(`board-${parsed.boardId}`);
   updateTag(`org-${org.id}-boards`);
 
-  return {
-    id: comment.id,
-    cardId: comment.cardId,
-    authorId: comment.authorId,
-    content: comment.content,
-    parentId: comment.parentId,
-    createdAt: comment.createdAt.toISOString(),
-    updatedAt: comment.updatedAt.toISOString(),
-  };
+  return toComment(comment);
 }
 
 export async function deleteCard(cardId: string, boardId: string, orgId: string) {

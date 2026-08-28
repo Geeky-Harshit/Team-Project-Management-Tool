@@ -64,12 +64,15 @@ export const addCommentSchema = z.object({
   parentId: z.string().min(1).nullable().optional(),
 });
 
-export const deleteCardSchema = z.object({
+export const cardScopeSchema = z.object({
   cardId: z.string().min(1, "Card ID is required"),
   boardId: z.string().min(1, "Board ID is required"),
   orgId: z.string().min(1, "Organization ID is required"),
 });
 
+export const deleteCardSchema = cardScopeSchema;
+
+export type CardScopeInput = z.infer<typeof cardScopeSchema>;
 export type CreateCardInput = z.infer<typeof createCardSchema>;
 export type CreateCardApiInput = z.infer<typeof createCardApiSchema>;
 export type UpdateCardDetailsInput = z.infer<typeof updateCardDetailsSchema>;

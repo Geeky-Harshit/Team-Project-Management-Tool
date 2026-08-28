@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { addComment } from "@/actions/cards-action";
+import { addComment, getCardComments } from "@/actions/cards-action";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -47,18 +47,13 @@ export default function CardComments({
       setLoading(true);
       setError("");
       try {
-        const res = await fetch(`/api/cards/${cardId}/comments`);
-        const data = await res.json();
-        if (canceled) return;
-        if (!res.ok || !Array.isArray(data)) {
-          setError(data.error || "Failed to load comments");
-          setComments([]);
-          return;
-        }
-        setComments(data);
-      } catch {
+        const data = await getCardComments(cardId, boardId, orgId);
+        if (!canceled) setComments(data);
+      } catch (err) {
         if (!canceled) {
-          setError("Failed to load comments");
+          setError(
+            err instanceof Error ? err.message : "Failed to load comments",
+          );
           setComments([]);
         }
       } finally {
@@ -69,7 +64,7 @@ export default function CardComments({
     return () => {
       canceled = true;
     };
-  }, [cardId]);
+  }, [cardId, boardId, orgId]);
 
   const handlePostComment = async (e: React.FormEvent) => {
     e.preventDefault();
