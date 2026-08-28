@@ -173,6 +173,8 @@ model Card {
   activities  Activity[]
 
   @@index([listId, archived])
+  @@index([assigneeId])
+  @@index([archived, dueDate])
   @@map("card")
 }
 
