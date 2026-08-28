@@ -32,7 +32,7 @@ export interface Invite {
   invitedBy?: string;
   status?: string;
   expiresAt: Date | string;
-  createdAt: Date | string;
+  createdAt?: Date | string;
 }
 
 export interface MemberUser {
