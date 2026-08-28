@@ -31,7 +31,7 @@ export default async function ArchivedBoardsPage({ params }: PageProps) {
   if (!org) notFound();
 
   try {
-    await validateOrgAccess(org.id, "admin");
+    await validateOrgAccess(org.id, "admin", org);
   } catch {
     redirect(`/${orgSlug}/boards`);
   }
@@ -42,17 +42,29 @@ export default async function ArchivedBoardsPage({ params }: PageProps) {
       archived: true,
     },
     orderBy: { updatedAt: "desc" },
-    include: {
-      lists: {
-        select: {
-          id: true,
-          cards: {
-            select: { id: true },
-          },
-        },
-      },
+    select: {
+      id: true,
+      name: true,
+      updatedAt: true,
+      _count: { select: { lists: true } },
     },
   });
+
+  const archivedListRows = await prisma.list.findMany({
+    where: { board: { organizationId: org.id, archived: true } },
+    select: {
+      boardId: true,
+      _count: { select: { cards: true } },
+    },
+  });
+
+  const taskCountByBoard = new Map<string, number>();
+  for (const list of archivedListRows) {
+    taskCountByBoard.set(
+      list.boardId,
+      (taskCountByBoard.get(list.boardId) ?? 0) + list._count.cards,
+    );
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-6 md:p-8">
@@ -93,8 +105,8 @@ export default async function ArchivedBoardsPage({ params }: PageProps) {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {archivedBoards.map((board) => {
-            const listCount = board.lists.length;
-            const taskCount = board.lists.reduce((acc, l) => acc + l.cards.length, 0);
+            const listCount = board._count.lists;
+            const taskCount = taskCountByBoard.get(board.id) ?? 0;
 
             return (
               <div
