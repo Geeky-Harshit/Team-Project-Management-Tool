@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/auth/auth";
 import { requireRole } from "@/lib/auth/permissions";
 import { prisma } from "@/lib/prisma";
+import { toActivity } from "@/lib/serialize";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -22,6 +23,7 @@ export async function GET(request: NextRequest) {
 
     const org = await prisma.organization.findUnique({
       where: { id: orgId },
+      select: { id: true },
     });
 
     if (!org)
@@ -53,16 +55,7 @@ export async function GET(request: NextRequest) {
       : null;
 
     return NextResponse.json({
-      activities: items.map((a) => ({
-        id: a.id,
-        organizationId: a.organizationId,
-        boardId: a.boardId,
-        cardId: a.cardId,
-        actorId: a.actorId,
-        type: a.type,
-        message: a.message,
-        createdAt: a.createdAt.toISOString(),
-      })),
+      activities: items.map(toActivity),
       nextCursor,
       hasMore,
     });

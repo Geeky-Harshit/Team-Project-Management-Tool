@@ -13,8 +13,9 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import { useHydrated } from "@/hooks/useHydrated";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import CardItem from "./card-item";
 import ListColumn from "./list-column";
@@ -44,16 +45,12 @@ export default function KanbanDndProvider({
   onOpenCard,
 }: KanbanDndProviderProps) {
   const router = useRouter();
+  const hydrated = useHydrated();
   const [, startTransition] = useTransition();
-  const [mounted, setMounted] = useState(false);
   const [activeDragCard, setActiveDragCard] = useState<Card | null>(null);
   const [dragRotation, setDragRotation] = useState(0);
   const lastOverListId = useRef<string | null>(null);
   const preDragCards = useRef<Card[] | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -262,7 +259,7 @@ export default function KanbanDndProvider({
             cards={cardsByListId.get(list.id) ?? []}
             boardId={boardId}
             onOpenCard={onOpenCard}
-            dndEnabled={mounted && canEdit}
+            dndEnabled={hydrated && canEdit}
             canEdit={canEdit}
           />
         ))}

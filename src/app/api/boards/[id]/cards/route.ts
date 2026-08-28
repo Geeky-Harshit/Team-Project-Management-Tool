@@ -1,7 +1,6 @@
 import { Prisma } from "@/generated/prisma/client";
 import { logActivity } from "@/lib/activity-logger";
-import { getSession } from "@/lib/auth/auth";
-import { requireRole } from "@/lib/auth/permissions";
+import { validateBoardAccess } from "@/lib/auth/board-access";
 import { prisma } from "@/lib/prisma";
 import { createCardApiSchema, updateCardsPatchSchema } from "@/lib/validations";
 import { Board, Role } from "@/types";
@@ -48,17 +47,15 @@ async function checkBoardAccess(
   userId: string;
   board: Pick<Board, "id" | "organizationId" | "name">;
 }> {
-  const session = await getSession();
-  if (!session) throw new Error("Unauthorized");
-
-  const board = await prisma.board.findUnique({
-    where: { id: boardId },
-    select: { id: true, organizationId: true, name: true },
-  });
-  if (!board) throw new Error("Board not found");
-
-  await requireRole(session.user.id, board.organizationId, minRole);
-  return { userId: session.user.id, board };
+  const { user, board } = await validateBoardAccess(boardId, minRole);
+  return {
+    userId: user.id,
+    board: {
+      id: board.id,
+      organizationId: board.organizationId,
+      name: board.name,
+    },
+  };
 }
 
 async function assertListsOnBoard(boardId: string, listIds: string[]) {

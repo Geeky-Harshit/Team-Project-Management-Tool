@@ -5,7 +5,7 @@ import { WorkspaceActivityFeed } from "@/components/dashboard/workspace-activity
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
 import { getCachedOrgBySlug } from "@/lib/data-cache";
 import { prisma } from "@/lib/prisma";
-import { Activity } from "@/types";
+import { toActivity, toCard } from "@/lib/serialize";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -99,19 +99,7 @@ export default async function OrgDashboardPage({
       }),
     ]);
 
-  const overdue = overdueCards.map((card) => ({
-    id: card.id,
-    listId: card.listId,
-    title: card.title,
-    description: card.description ?? "",
-    assigneeId: card.assigneeId,
-    dueDate: card.dueDate?.toISOString() ?? null,
-    position: card.position,
-    archived: card.archived,
-    createdBy: card.createdBy,
-    createdAt: card.createdAt.toISOString(),
-    updatedAt: card.updatedAt.toISOString(),
-  }));
+  const overdue = overdueCards.map(toCard);
 
   const userMap = new Map(users.map((u) => [u.id, u]));
 
@@ -132,16 +120,7 @@ export default async function OrgDashboardPage({
     };
   });
 
-  const activities: Activity[] = rawActivities.map((activity) => ({
-    id: activity.id,
-    organizationId: activity.organizationId,
-    boardId: activity.boardId,
-    cardId: activity.cardId,
-    actorId: activity.actorId,
-    type: activity.type as Activity['type'],
-    message: activity.message,
-    createdAt: activity.createdAt.toISOString(),
-  }));
+  const activities = rawActivities.map(toActivity);
 
   return (
     <div className="flex flex-col gap-8 max-w-5xl mx-auto p-6 font-sans">

@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, List } from "@/types";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import EmptyBoard from "./empty-board";
 import KanbanDndProvider from "./kanban-dnd-provider";
 import CardDetailModal from "./card-detail-modal";
@@ -35,15 +35,18 @@ export function KanbanBoard({
   const { currentOrg } = useOrgs();
   const router = useRouter();
   const [cards, setCards] = useState<Card[]>(initialCards);
+  const [serverCards, setServerCards] = useState<Card[]>(initialCards);
   const [activeCardModal, setActiveCardModal] = useState<Card | null>(null);
 
-  useEffect(() => {
-    setCards((prev) =>
-      cardsFingerprint(prev) === cardsFingerprint(initialCards)
-        ? prev
-        : initialCards,
-    );
-  }, [initialCards]);
+  // Adjust state during render rather than in an effect. A fresh server
+  // payload only replaces local state when the cards actually differ, so an
+  // in-flight optimistic drag is not clobbered by an identical refresh.
+  if (serverCards !== initialCards) {
+    setServerCards(initialCards);
+    if (cardsFingerprint(cards) !== cardsFingerprint(initialCards)) {
+      setCards(initialCards);
+    }
+  }
 
   const onOpenCard = useCallback((card: Card) => {
     setActiveCardModal(card);
