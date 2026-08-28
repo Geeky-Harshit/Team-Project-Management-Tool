@@ -101,7 +101,7 @@ export default function CardDetailModal({ card, boardId, onClose, canEdit = true
                 <AlertDialogTrigger
                   disabled={deleting}
                   className="h-7 w-7 text-gray-400 hover:text-red-500 hover:bg-red-50"
-                  title="Delete List"
+                  title="Delete Card"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </AlertDialogTrigger>
