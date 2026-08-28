@@ -1,10 +1,12 @@
 "use client";
 
+import { memo, useMemo } from "react";
 import { Card as ICard } from "@/types";
 import { Card } from "@/components/ui/card";
 import { Calendar } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useOrgMembers } from "@/hooks/useOrgMembers";
 
 interface CardItemProps {
   card: ICard;
@@ -14,13 +16,19 @@ interface CardItemProps {
   rotation?: number;
 }
 
-export default function CardItem({
+function CardItem({
   card,
   onClick,
   dndEnabled = true,
   isOverlay = false,
   rotation = 0,
 }: CardItemProps) {
+  const members = useOrgMembers();
+  const assignee = useMemo(
+    () => members.find((m) => m.id === card.assigneeId),
+    [members, card.assigneeId]
+  );
+
   const isOverdue = card.dueDate ? new Date(card.dueDate) < new Date() : false;
 
   const sortable = useSortable({
@@ -45,6 +53,12 @@ export default function CardItem({
         opacity: sortable.isDragging ? 0.3 : 1,
       }
       : undefined;
+
+  const assigneeInitials = assignee?.name
+    ? assignee.name.slice(0, 2).toUpperCase()
+    : card.assigneeId
+      ? card.assigneeId.slice(-2).toUpperCase()
+      : null;
 
   return (
     <Card
@@ -86,9 +100,12 @@ export default function CardItem({
             <span />
           )}
 
-          {card.assigneeId && (
-            <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full uppercase">
-              {card.assigneeId.slice(-4)}
+          {assigneeInitials && (
+            <span
+              title={assignee?.name || undefined}
+              className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full uppercase"
+            >
+              {assigneeInitials}
             </span>
           )}
         </div>
@@ -96,3 +113,5 @@ export default function CardItem({
     </Card>
   );
 }
+
+export default memo(CardItem);
