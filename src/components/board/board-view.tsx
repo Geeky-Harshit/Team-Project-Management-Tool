@@ -1,5 +1,3 @@
-"use client";
-
 import BoardHeader from "@/components/board/board-header";
 import { KanbanBoard } from "@/components/board/kanban-board";
 import { OrgMembersProvider } from "@/context/org-members-context";
