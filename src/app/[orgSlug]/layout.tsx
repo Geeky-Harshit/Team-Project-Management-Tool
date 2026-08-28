@@ -43,7 +43,7 @@ export default async function OrgLayout({ children, params }: LayoutProps) {
         id: org.id,
         name: org.name,
         slug: org.slug,
-        createdAt: org.createdAt.toISOString(),
+        createdAt: org.createdAt,
       }}
     >
       <div className="flex flex-col md:flex-row h-[calc(100vh-4rem)] bg-gray-50 overflow-hidden relative">
