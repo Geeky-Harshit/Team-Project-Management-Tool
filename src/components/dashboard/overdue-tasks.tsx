@@ -1,5 +1,3 @@
-"use client";
-
 import { Card as UICard, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Card } from "@/types";
 import { ScrollFade } from "../scroll-fade";
