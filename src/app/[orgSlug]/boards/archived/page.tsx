@@ -27,9 +27,7 @@ export async function generateMetadata({
 export default async function ArchivedBoardsPage({ params }: PageProps) {
   const { orgSlug } = await params;
 
-  const org = await prisma.organization.findUnique({
-    where: { slug: orgSlug },
-  });
+  const org = await getCachedOrgBySlug(orgSlug);
   if (!org) notFound();
 
   try {
