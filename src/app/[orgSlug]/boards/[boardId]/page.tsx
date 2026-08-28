@@ -1,4 +1,5 @@
 import BoardView from "@/components/board/board-view";
+import { canEditCards, canManageOrg } from "@/lib/auth/permissions";
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
 import { getCachedBoard, getCachedOrgBySlug } from "@/lib/data-cache";
 import { prisma } from "@/lib/prisma";
@@ -37,8 +38,8 @@ export default async function BoardPage({ params }: PageProps) {
 
   // Step 2: Validate access
   const { role } = await validateOrgAccess(org.id, "viewer", org);
-  const canEdit = role === "owner" || role === "admin" || role === "member";
-  const isAdmin = role === "owner" || role === "admin";
+  const canEdit = canEditCards(role);
+  const isAdmin = canManageOrg(role);
 
   // Step 3: Fetch Board (cached) and Org Members in PARALLEL
   const [board, orgMembers] = await Promise.all([
