@@ -12,21 +12,14 @@ export default function Home() {
           Team Management Tool
         </h1>
         <p className="mt-3 text-sm text-gray-600">
-          Multi-tenant Kanban for organizations, boards, and cards. This landing
-          page is static — it does not read cookies, headers, or search params.
+          Multi-tenant Kanban for organizations, boards, and cards.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link
             href="/dashboard"
             className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90"
           >
-            Go to dashboard
-          </Link>
-          <Link
-            href="/sign-in"
-            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-          >
-            Sign in
+            Continue {"->"}
           </Link>
         </div>
       </div>
