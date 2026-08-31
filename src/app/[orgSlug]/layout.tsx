@@ -12,12 +12,6 @@ interface LayoutProps {
   params: Promise<{ orgSlug: string }>;
 }
 
-export const dynamicParams = true;
-
-export async function generateStaticParams() {
-  return [];
-}
-
 function OrgLayoutFallback() {
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col bg-gray-50 md:flex-row">
