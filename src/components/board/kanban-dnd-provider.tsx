@@ -15,7 +15,7 @@ import {
 } from "@dnd-kit/core";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useMemo, useOptimistic, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import CardItem from "./card-item";
 import ListColumn from "./list-column";
@@ -52,6 +52,11 @@ export default function KanbanDndProvider({
   const lastOverListId = useRef<string | null>(null);
   const preDragCards = useRef<Card[] | null>(null);
 
+  const [optimisticCards, applyOptimistic] = useOptimistic(
+    cards,
+    (_current: Card[], next: Card[]) => next,
+  );
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 },
@@ -71,7 +76,7 @@ export default function KanbanDndProvider({
       map.set(list.id, []);
     }
 
-    for (const card of cards) {
+    for (const card of optimisticCards) {
       if (selectedAssigneeId && card.assigneeId !== selectedAssigneeId) continue;
       if (
         query &&
@@ -90,20 +95,34 @@ export default function KanbanDndProvider({
     }
 
     return map;
-  }, [cards, sortedLists, selectedAssigneeId, searchQuery]);
+  }, [optimisticCards, sortedLists, selectedAssigneeId, searchQuery]);
+
+  const previewCards = (next: Card[]) => {
+    startTransition(() => {
+      applyOptimistic(next);
+      setCards(next);
+    });
+  };
 
   const rollback = (snapshot: Card[] | null, message: string) => {
-    if (snapshot) setCards(snapshot);
+    if (snapshot) {
+      startTransition(() => {
+        applyOptimistic(snapshot);
+        setCards(snapshot);
+      });
+    }
     toast.error(message);
     router.refresh();
   };
 
   const patchCards = (
     body: Record<string, unknown>,
+    next: Card[],
     snapshot: Card[] | null,
     errorMessage: string,
   ) => {
     startTransition(async () => {
+      applyOptimistic(next);
       try {
         const res = await fetch(`/api/boards/${boardId}/cards`, {
           method: "PATCH",
@@ -121,6 +140,7 @@ export default function KanbanDndProvider({
           return;
         }
 
+        setCards(next);
         showActivityToast("CARD_MOVED");
       } catch (err) {
         console.error("Card PATCH request failed:", err);
@@ -132,7 +152,7 @@ export default function KanbanDndProvider({
   const handleDragStart = (event: DragStartEvent) => {
     if (!canEdit) return;
     const { active } = event;
-    const card = cards.find((c) => c.id === active.id) || null;
+    const card = optimisticCards.find((c) => c.id === active.id) || null;
     setActiveDragCard(card);
     lastOverListId.current = card?.listId ?? null;
     preDragCards.current = cards;
@@ -148,18 +168,20 @@ export default function KanbanDndProvider({
     const overId = over.id as string;
     if (activeId === overId) return;
 
-    const activeCard = cards.find((c) => c.id === activeId);
+    const activeCard = optimisticCards.find((c) => c.id === activeId);
     if (!activeCard) return;
 
     const isOverAColumn = sortedLists.some((l) => l.id === overId);
-    const overCard = cards.find((c) => c.id === overId);
+    const overCard = optimisticCards.find((c) => c.id === overId);
     const overListId = isOverAColumn ? overId : overCard?.listId;
     if (!overListId || activeCard.listId === overListId) return;
     if (lastOverListId.current === overListId) return;
 
     lastOverListId.current = overListId;
-    setCards((prev) =>
-      prev.map((c) => (c.id === activeId ? { ...c, listId: overListId } : c)),
+    previewCards(
+      optimisticCards.map((c) =>
+        c.id === activeId ? { ...c, listId: overListId } : c,
+      ),
     );
   };
 
@@ -175,17 +197,17 @@ export default function KanbanDndProvider({
 
     const activeId = active.id as string;
     const overId = over.id as string;
-    const currentCard = cards.find((c) => c.id === activeId);
+    const currentCard = optimisticCards.find((c) => c.id === activeId);
     if (!currentCard) return;
 
     const isOverAColumn = sortedLists.some((l) => l.id === overId);
     const targetListId = isOverAColumn
       ? overId
-      : cards.find((c) => c.id === overId)?.listId;
+      : optimisticCards.find((c) => c.id === overId)?.listId;
 
     if (!targetListId) return;
 
-    const targetListCards = cards.filter(
+    const targetListCards = optimisticCards.filter(
       (c) => c.listId === targetListId && c.id !== activeId,
     );
 
@@ -207,15 +229,15 @@ export default function KanbanDndProvider({
     const snapshot = preDragCards.current;
     preDragCards.current = null;
 
-    setCards((prev) => {
-      const unaffected = prev.filter(
+    const nextCards = [
+      ...optimisticCards.filter(
         (c) => c.listId !== targetListId && c.id !== activeId,
-      );
-      return [...unaffected, ...reorderedWithPositions];
-    });
+      ),
+      ...reorderedWithPositions,
+    ];
 
     if (activeDragCard && activeDragCard.listId !== targetListId) {
-      const sourceListCards = cards
+      const sourceListCards = optimisticCards
         .filter((c) => c.listId === activeDragCard.listId && c.id !== activeId)
         .sort((a, b) => a.position - b.position);
 
@@ -227,6 +249,7 @@ export default function KanbanDndProvider({
           sourceCardIds: sourceListCards.map((c) => c.id),
           targetCardIds: reorderedWithPositions.map((c) => c.id),
         },
+        nextCards,
         snapshot,
         "Failed to move card",
       );
@@ -236,6 +259,7 @@ export default function KanbanDndProvider({
           listId: targetListId,
           cardIds: reorderedWithPositions.map((c) => c.id),
         },
+        nextCards,
         snapshot,
         "Failed to save card order",
       );
