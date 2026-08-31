@@ -8,7 +8,7 @@ import {
   renameBoardSchema,
   boardActionSchema,
 } from "@/lib/validations";
-import { updateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 
 export async function createBoard(formData: FormData) {
   const parsed = createBoardSchema.parse({
@@ -38,6 +38,7 @@ export async function createBoard(formData: FormData) {
 
   updateTag(`board-${board.id}`);
   updateTag(`org-${org.id}-boards`);
+  revalidatePath(`/${org.slug}/boards`);
 
   return {
     success: true,
