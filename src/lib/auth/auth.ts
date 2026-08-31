@@ -20,7 +20,21 @@ const statements = {
 const ac = createAccessControl(statements);
 const viewer = ac.newRole({});
 
+const vercelOrigins = [
+  process.env.VERCEL_PROJECT_PRODUCTION_URL,
+  process.env.VERCEL_BRANCH_URL,
+  process.env.VERCEL_URL,
+]
+  .filter(Boolean)
+  .map((host) => `https://${host}`);
+
 export const auth = betterAuth({
+  secret: process.env.BETTER_AUTH_SECRET,
+  baseURL: process.env.BETTER_AUTH_URL,
+  trustedOrigins: vercelOrigins,
+  advanced: {
+    trustedProxyHeaders: process.env.VERCEL === "1",
+  },
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
