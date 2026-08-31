@@ -5,8 +5,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signIn } from "@/lib/auth/auth-client";
+import { getSafeCallbackUrl } from "@/lib/auth/safe-callback-url";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 export function SignInForm() {
@@ -14,7 +15,9 @@ export function SignInForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = getSafeCallbackUrl(searchParams.get("callbackUrl"));
+  const signUpUrl = `/sign-up?callbackUrl=${encodeURIComponent(callbackUrl)}`;
 
   async function handleSubmit(e: React.SubmitEvent) {
     e.preventDefault();
@@ -26,7 +29,7 @@ export function SignInForm() {
       if (result.error) {
         setError(result.error.message ?? "Failed to sign in");
       } else {
-        router.push("/dashboard");
+        window.location.replace(callbackUrl);
       }
     } catch (err) {
       setError("An unexpected error occurred");
@@ -85,7 +88,7 @@ export function SignInForm() {
             </Button>
             <p className="text-center text-sm text-gray-600">
               Don&apos;t have an account?{" "}
-              <Link href="/sign-up" className="font-medium text-primary hover:underline">
+              <Link href={signUpUrl} className="font-medium text-primary hover:underline">
                 Sign up
               </Link>
             </p>

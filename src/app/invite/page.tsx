@@ -57,7 +57,8 @@ function InvitePageContent() {
 
   const handleAccept = async () => {
     if (!session) {
-      router.push("/sign-in?callbackUrl=/invite?token=" + token);
+      const callbackUrl = `/invite?token=${token}`;
+      router.push(`/sign-in?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       return;
     }
 
