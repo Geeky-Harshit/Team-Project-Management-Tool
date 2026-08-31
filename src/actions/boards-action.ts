@@ -10,39 +10,49 @@ import {
 } from "@/lib/validations";
 import { revalidatePath, updateTag } from "next/cache";
 
-export async function createBoard(formData: FormData) {
-  const parsed = createBoardSchema.parse({
-    organizationId: formData.get("organizationId"),
-    name: formData.get("name"),
-  });
+export type BoardFormState = { ok: boolean; error?: string };
 
-  const { user, org } = await validateOrgAccess(
-    parsed.organizationId,
-    "member",
-  );
+export async function createBoard(
+  _prev: BoardFormState,
+  formData: FormData,
+): Promise<BoardFormState> {
+  try {
+    const parsed = createBoardSchema.parse({
+      organizationId: formData.get("organizationId"),
+      name: formData.get("name"),
+    });
 
-  const board = await prisma.board.create({
-    data: {
-      name: parsed.name,
+    const { user, org } = await validateOrgAccess(
+      parsed.organizationId,
+      "member",
+    );
+
+    const board = await prisma.board.create({
+      data: {
+        name: parsed.name,
+        organizationId: org.id,
+      },
+    });
+
+    await logActivity({
       organizationId: org.id,
-    },
-  });
+      boardId: board.id,
+      actorId: user.id,
+      type: "BOARD_CREATED",
+      message: `created board "${parsed.name}"`,
+    });
 
-  await logActivity({
-    organizationId: org.id,
-    boardId: board.id,
-    actorId: user.id,
-    type: "BOARD_CREATED",
-    message: `created board "${parsed.name}"`,
-  });
+    updateTag(`board-${board.id}`);
+    updateTag(`org-${org.id}-boards`);
+    revalidatePath(`/${org.slug}/boards`);
 
-  updateTag(`board-${board.id}`);
-  updateTag(`org-${org.id}-boards`);
-  revalidatePath(`/${org.slug}/boards`);
-
-  return {
-    success: true,
-  };
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Failed to create board",
+    };
+  }
 }
 
 export async function renameBoard(
