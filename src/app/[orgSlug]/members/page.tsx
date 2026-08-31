@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { Invite, MemberWithUser, Role } from "@/types";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import MembersLoading from "./loading";
 
 interface PageProps {
   params: Promise<{ orgSlug: string }>;
@@ -21,7 +23,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function MembersPage({ params }: PageProps) {
+async function MembersPageInner({ params }: PageProps) {
   const { orgSlug } = await params;
 
   const org = await getCachedOrgBySlug(orgSlug);
@@ -80,5 +82,13 @@ export default async function MembersPage({ params }: PageProps) {
       initialMembers={initialMembers}
       initialInvites={initialInvites}
     />
+  );
+}
+
+export default function MembersPage({ params }: PageProps) {
+  return (
+    <Suspense fallback={<MembersLoading />}>
+      <MembersPageInner params={params} />
+    </Suspense>
   );
 }

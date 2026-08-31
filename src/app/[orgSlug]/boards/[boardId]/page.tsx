@@ -7,6 +7,8 @@ import { toCard, toList } from "@/lib/serialize";
 import { MemberUser as IMember } from "@/types";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import BoardPageLoading from "./loading";
 
 interface PageProps {
   params: Promise<{ orgSlug: string; boardId: string }>;
@@ -30,7 +32,7 @@ export async function generateMetadata({
 }
 
 // 2. Main Page Server Component
-export default async function BoardPage({ params }: PageProps) {
+async function BoardPageInner({ params }: PageProps) {
   const { orgSlug, boardId } = await params;
 
   // Step 1: Resolve organization (cached)
@@ -84,5 +86,13 @@ export default async function BoardPage({ params }: PageProps) {
       overdueCount={overdueCount}
       isAdmin={isAdmin}
     />
+  );
+}
+
+export default function BoardPage({ params }: PageProps) {
+  return (
+    <Suspense fallback={<BoardPageLoading />}>
+      <BoardPageInner params={params} />
+    </Suspense>
   );
 }

@@ -8,6 +8,8 @@ import { prisma } from "@/lib/prisma";
 import { toActivity, toCard } from "@/lib/serialize";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import OrgDashboardLoading from "./loading";
 
 export async function generateMetadata({
   params,
@@ -24,7 +26,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function OrgDashboardPage({
+async function OrgDashboardPageInner({
   params,
 }: {
   params: Promise<{ orgSlug: string }>;
@@ -143,5 +145,17 @@ export default async function OrgDashboardPage({
         <WorkspaceActivityFeed initialActivities={activities} orgId={org.id} />
       </div>
     </div>
+  );
+}
+
+export default function OrgDashboardPage({
+  params,
+}: {
+  params: Promise<{ orgSlug: string }>;
+}) {
+  return (
+    <Suspense fallback={<OrgDashboardLoading />}>
+      <OrgDashboardPageInner params={params} />
+    </Suspense>
   );
 }

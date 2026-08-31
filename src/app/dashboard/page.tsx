@@ -6,13 +6,15 @@ import OrganizationList from "@/components/dashboard/organization-list";
 import OrganizationForm from "@/components/dashboard/organization-form";
 import type { Metadata } from "next";
 import { Organization } from "@/types";
+import { Suspense } from "react";
+import DashboardLoading from "./loading";
 
 export const metadata: Metadata = {
   title: "Dashboard",
   description: "Manage your organizations and workspaces",
 };
 
-export default async function DashboardPage() {
+async function DashboardPageInner() {
   const session = await getSession();
 
   if (!session) {
@@ -51,5 +53,13 @@ export default async function DashboardPage() {
         </main>
       </div>
     </OrgProvider>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardLoading />}>
+      <DashboardPageInner />
+    </Suspense>
   );
 }

@@ -8,6 +8,8 @@ import { Archive } from "lucide-react";
 import { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import BoardsLoading from "./loading";
 
 interface PageProps {
   params: Promise<{ orgSlug: string }>;
@@ -24,7 +26,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function BoardsPage({ params }: PageProps) {
+async function BoardsPageInner({ params }: PageProps) {
   const { orgSlug } = await params;
 
   // 1. Cached Org lookup
@@ -192,5 +194,13 @@ export default async function BoardsPage({ params }: PageProps) {
         </div>
       </section>
     </div>
+  );
+}
+
+export default function BoardsPage({ params }: PageProps) {
+  return (
+    <Suspense fallback={<BoardsLoading />}>
+      <BoardsPageInner params={params} />
+    </Suspense>
   );
 }
