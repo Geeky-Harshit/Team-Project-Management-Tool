@@ -1,5 +1,6 @@
 import { logActivity } from "@/lib/activity-logger";
 import { getSession } from "@/lib/auth/auth";
+import { normalizeEmail } from "@/lib/auth/normalize-email";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -18,7 +19,18 @@ export async function POST(
       where: { id: token, status: "pending" },
     });
 
-    if (!invite || new Date() > invite.expiresAt) {
+    if (!invite) {
+      return NextResponse.json(
+        { error: "Invalid or expired invitation" },
+        { status: 400 },
+      );
+    }
+
+    if (normalizeEmail(session.user.email) !== normalizeEmail(invite.email)) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
+
+    if (new Date() > invite.expiresAt) {
       return NextResponse.json(
         { error: "Invalid or expired invitation" },
         { status: 400 },
