@@ -126,20 +126,20 @@ Major actions are logged automatically, including:
 
 # 🛠 Tech Stack
 
-| Category | Technology |
-|----------|------------|
-| Framework | Next.js 16 (App Router) |
-| Language | TypeScript |
-| UI | React 19 |
-| Styling | Tailwind CSS |
-| Components | shadcn/ui |
-| Database | PostgreSQL (Neon Serverless) |
-| ORM | Prisma ORM 7 (`@prisma/adapter-neon`) |
-| Authentication | Better Auth |
-| Drag & Drop | dnd-kit |
-| Notifications | Sonner |
-| Email | Nodemailer |
-| Fake Data | Faker |
+| Category       | Technology                            |
+| -------------- | ------------------------------------- |
+| Framework      | Next.js 16 (App Router)               |
+| Language       | TypeScript                            |
+| UI             | React 19                              |
+| Styling        | Tailwind CSS                          |
+| Components     | shadcn/ui                             |
+| Database       | PostgreSQL (Neon Serverless)          |
+| ORM            | Prisma ORM 7 (`@prisma/adapter-neon`) |
+| Authentication | Better Auth                           |
+| Drag & Drop    | dnd-kit                               |
+| Notifications  | Sonner                                |
+| Email          | Nodemailer                            |
+| Fake Data      | Faker                                 |
 
 ---
 
@@ -147,9 +147,7 @@ Major actions are logged automatically, including:
 
 ```text
 ├── prisma
-│   ├── schema.prisma
-│   └── migrations/
-├── prisma.config.ts
+│   └── schema.prisma
 ├── src
 │   ├── actions
 │   │   ├── boards-action.ts
@@ -164,15 +162,20 @@ Major actions are logged automatically, including:
 │   │   ├── [orgSlug]
 │   │   │   ├── boards
 │   │   │   │   ├── [boardId]
+│   │   │   │   │   ├── error.tsx
 │   │   │   │   │   ├── loading.tsx
 │   │   │   │   │   └── page.tsx
 │   │   │   │   ├── archived
+│   │   │   │   │   ├── loading.tsx
 │   │   │   │   │   └── page.tsx
 │   │   │   │   ├── loading.tsx
 │   │   │   │   └── page.tsx
 │   │   │   ├── error.tsx
 │   │   │   ├── layout.tsx
+│   │   │   ├── loading.tsx
 │   │   │   ├── members
+│   │   │   │   ├── error.tsx
+│   │   │   │   ├── loading.tsx
 │   │   │   │   └── page.tsx
 │   │   │   ├── not-found.tsx
 │   │   │   └── page.tsx
@@ -186,10 +189,6 @@ Major actions are logged automatically, including:
 │   │   │   │   └── [id]
 │   │   │   │       └── cards
 │   │   │   │           └── route.ts
-│   │   │   ├── cards
-│   │   │   │   └── [cardId]
-│   │   │   │       └── comments
-│   │   │   │           └── route.ts
 │   │   │   ├── invites
 │   │   │   │   ├── [token]
 │   │   │   │   │   ├── accept
@@ -201,8 +200,11 @@ Major actions are logged automatically, including:
 │   │   │           └── boards
 │   │   │               └── route.ts
 │   │   ├── dashboard
+│   │   │   ├── error.tsx
+│   │   │   ├── loading.tsx
 │   │   │   └── page.tsx
 │   │   ├── error.tsx
+│   │   ├── favicon.ico
 │   │   ├── globals.css
 │   │   ├── invite
 │   │   │   └── page.tsx
@@ -210,25 +212,40 @@ Major actions are logged automatically, including:
 │   │   ├── not-found.tsx
 │   │   └── page.tsx
 │   ├── components
+│   │   ├── auth
+│   │   │   ├── sign-in-form.tsx
+│   │   │   └── sign-up-form.tsx
 │   │   ├── board
+│   │   │   ├── add-list.tsx
+│   │   │   ├── board-client.tsx
 │   │   │   ├── board-header.tsx
+│   │   │   ├── board-title.tsx
+│   │   │   ├── board-view.tsx
+│   │   │   ├── boards-grid-live.tsx
 │   │   │   ├── card-comments.tsx
 │   │   │   ├── card-detail-modal.tsx
 │   │   │   ├── card-item.tsx
 │   │   │   ├── column-header.tsx
+│   │   │   ├── create-card-modal.tsx
+│   │   │   ├── empty-board.tsx
 │   │   │   ├── kanban-board.tsx
+│   │   │   ├── kanban-dnd-provider.tsx
 │   │   │   ├── list-column.tsx
+│   │   │   ├── member-filter-bar.tsx
 │   │   │   └── restore-board-button.tsx
 │   │   ├── create-board-card.tsx
-│   │   ├── create-card-form.tsx
-│   │   ├── create-list-form.tsx
 │   │   ├── dashboard
+│   │   │   ├── dashboard-activity-live.tsx
+│   │   │   ├── dashboard-overdue-live.tsx
+│   │   │   ├── dashboard-stats-live.tsx
 │   │   │   ├── dashboard-stats.tsx
+│   │   │   ├── dashboard-workload-live.tsx
 │   │   │   ├── organization-form.tsx
 │   │   │   ├── organization-list.tsx
 │   │   │   ├── overdue-tasks.tsx
 │   │   │   ├── workload-breakdown.tsx
 │   │   │   └── workspace-activity.tsx
+│   │   ├── form-submit-button.tsx
 │   │   ├── invite
 │   │   │   ├── invite-card.tsx
 │   │   │   └── invite-error.tsx
@@ -239,30 +256,49 @@ Major actions are logged automatically, including:
 │   │   │   ├── members-list.tsx
 │   │   │   └── pending-invites.tsx
 │   │   ├── navbar.tsx
+│   │   ├── scroll-fade.tsx
 │   │   ├── sidebar.tsx
 │   │   └── ui
+│   │       ├── alert-dialog.tsx
 │   │       ├── avatar.tsx
 │   │       ├── button.tsx
 │   │       ├── card.tsx
 │   │       ├── dropdown-menu.tsx
 │   │       ├── input.tsx
 │   │       ├── label.tsx
-│   │       └── textarea.tsx
+│   │       ├── textarea.tsx
+│   │       └── tooltip.tsx
 │   ├── context
-│   │   └── org-context.tsx
-│   ├── generated/prisma
+│   │   ├── org-context.tsx
+│   │   └── org-members-context.tsx
+│   ├── generated    // Prisma-generated models and types
 │   ├── hooks
+│   │   ├── useHydrated.ts
+│   │   ├── useOrgMembers.ts
 │   │   └── useOrgs.ts
 │   ├── lib
 │   │   ├── activity-logger.ts
+│   │   ├── activity-toast.ts
 │   │   ├── auth
 │   │   │   ├── auth-client.ts
 │   │   │   ├── auth.ts
+│   │   │   ├── board-access.ts
 │   │   │   ├── permissions.ts
+│   │   │   ├── safe-callback-url.ts
 │   │   │   └── server-permissions.ts
+│   │   ├── data-cache.ts
 │   │   ├── mailer.ts
 │   │   ├── prisma.ts
-│   │   └── utils.ts
+│   │   ├── serialize.ts
+│   │   ├── show-activity-toast.ts
+│   │   ├── utils.ts
+│   │   └── validations
+│   │       ├── board-schemas.ts
+│   │       ├── card-schemas.ts
+│   │       ├── index.ts
+│   │       ├── invite-schemas.ts
+│   │       ├── list-schemas.ts
+│   │       └── org-schemas.ts
 │   ├── proxy.ts
 │   ├── scripts
 │   │   └── seed.ts
@@ -272,6 +308,21 @@ Major actions are logged automatically, including:
 │       ├── card.ts
 │       ├── index.ts
 │       └── organization.ts
+├── .env
+├── .git
+├── .gitignore
+├── README.md
+├── components.json
+├── eslint.config.mjs
+├── next-env.d.ts
+├── next.config.ts
+├── node_modules
+├── package-lock.json
+├── package.json
+├── postcss.config.mjs
+├── prisma.config.ts
+├── tsconfig.json
+└── tsconfig.tsbuildinfo
 ```
 
 ---
@@ -348,7 +399,6 @@ DATABASE_URL="postgresql://<user>:<password>@<neon-host>.neon.tech/neondb?sslmod
 
 BETTER_AUTH_SECRET="your-better-auth-secret"
 BETTER_AUTH_URL=http://localhost:3000
-NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000
 
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
@@ -356,6 +406,19 @@ SMTP_USER=user@example.com
 SMTP_PASS=password
 SMTP_FROM=noreply@example.com
 ```
+
+---
+
+## Deploy on Vercel
+
+1. Use Neon’s **pooled** `DATABASE_URL` (`-pooler.` host) for serverless.
+2. In the Vercel project, set:
+   - `DATABASE_URL`
+   - `BETTER_AUTH_SECRET` — `openssl rand -base64 32`
+   - `BETTER_AUTH_URL` — public production origin, no trailing slash
+
+3. Server auth uses `BETTER_AUTH_URL` as `baseURL` and trusts Vercel's generated deployment origins. The browser auth client uses the current origin.
+4. Redeploy after changing env vars. Smoke-test sign-up, sign-in, dashboard, and create org.
 
 ---
 
@@ -506,5 +569,4 @@ POST /api/invites/[token]/accept
 
 ```
 GET /api/activity
-```
 ```
