@@ -1,18 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
-const PUBLIC_ROUTES = ["/", "/sign-in", "/sign-up", "/invite"];
+const PUBLIC_ROUTES = ["/", "/sign-in", "/sign-up"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const isPublicInviteLookup =
-    request.method === "GET" && /^\/api\/invites\/[^/]+$/.test(pathname);
 
-  if (
-    PUBLIC_ROUTES.includes(pathname) ||
-    pathname.startsWith("/api/auth") ||
-    isPublicInviteLookup
-  ) {
+  if (PUBLIC_ROUTES.includes(pathname) || pathname.startsWith("/api/auth")) {
     return NextResponse.next();
   }
 
