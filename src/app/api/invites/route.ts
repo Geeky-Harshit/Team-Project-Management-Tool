@@ -1,5 +1,6 @@
 import { logActivity } from "@/lib/activity-logger";
 import { getSession } from "@/lib/auth/auth";
+import { normalizeEmail } from "@/lib/auth/normalize-email";
 import { requireRole } from "@/lib/auth/permissions";
 import { sendInviteEmail } from "@/lib/mailer";
 import { prisma } from "@/lib/prisma";
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     await requireRole(session.user.id, organizationId, "admin");
 
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail = normalizeEmail(email);
 
     const existingUser = await prisma.user.findUnique({
       where: { email: normalizedEmail },
