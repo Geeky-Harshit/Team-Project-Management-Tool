@@ -13,7 +13,6 @@ import { revalidatePath, updateTag } from "next/cache";
 export type BoardFormState = { ok: boolean; error?: string };
 
 export async function createBoard(
-  _prev: BoardFormState,
   formData: FormData,
 ): Promise<BoardFormState> {
   try {

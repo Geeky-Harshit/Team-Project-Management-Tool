@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { showActivityToast } from "@/lib/show-activity-toast";
 import { Plus, X } from "lucide-react";
-import { useActionState, useEffect, useState } from "react";
+import { useState } from "react";
 
 export default function CreateBoardCard({
   organizationId,
@@ -15,13 +15,25 @@ export default function CreateBoardCard({
   organizationId: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [state, formAction] = useActionState(createBoard, { ok: false });
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!state.ok) return;
-    showActivityToast("BOARD_CREATED");
+  async function handleCreateBoard(formData: FormData) {
+    const result = await createBoard(formData);
+
+    if (!result.ok) {
+      setError(result.error ?? "Failed to create board");
+      return;
+    }
+
+    setError(null);
     setIsOpen(false);
-  }, [state]);
+    showActivityToast("BOARD_CREATED");
+  }
+
+  function closeCard() {
+    setError(null);
+    setIsOpen(false);
+  }
 
   if (!isOpen) {
     return (
@@ -39,7 +51,10 @@ export default function CreateBoardCard({
 
   return (
     <Card className="h-44 p-4 flex flex-col justify-between border-gray-200 shadow-sm">
-      <form action={formAction} className="h-full flex flex-col justify-between">
+      <form
+        action={handleCreateBoard}
+        className="h-full flex flex-col justify-between"
+      >
         <input type="hidden" name="organizationId" value={organizationId} />
         <div className="flex items-center justify-between gap-2">
           <Input
@@ -54,14 +69,12 @@ export default function CreateBoardCard({
             variant="ghost"
             size="icon"
             className="h-8 w-8 shrink-0 text-gray-400 hover:text-gray-600"
-            onClick={() => setIsOpen(false)}
+            onClick={closeCard}
           >
             <X className="h-4 w-4" />
           </Button>
         </div>
-        {state.error && (
-          <p className="text-xs text-destructive">{state.error}</p>
-        )}
+        {error && <p className="text-xs text-destructive">{error}</p>}
         <FormSubmitButton
           pendingLabel="Creating..."
           className="h-8 bg-primary hover:bg-primary/90 text-sm font-medium"

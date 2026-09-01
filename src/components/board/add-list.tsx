@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 interface AddListProps {
@@ -16,25 +16,24 @@ interface AddListProps {
 
 export default function AddList({ boardId, orgId }: AddListProps) {
   const [isAddingList, setIsAddingList] = useState(false);
-  const [state, formAction] = useActionState(createList, { ok: false });
   const router = useRouter();
 
-  useEffect(() => {
-    if (!state.ok) return;
+  async function handleCreateList(formData: FormData) {
+    const result = await createList(formData);
+
+    if (!result.ok) {
+      toast.error(result.error ?? "Failed to create list");
+      return;
+    }
+
     setIsAddingList(false);
     router.refresh();
     toast.success("List created successfully");
-  }, [state, router]);
-
-  useEffect(() => {
-    if (state.error) {
-      toast.error(state.error);
-    }
-  }, [state.error]);
+  }
 
   if (isAddingList) {
     return (
-      <form action={formAction} className="flex items-center gap-1.5">
+      <form action={handleCreateList} className="flex items-center gap-1.5">
         <input type="hidden" name="boardId" value={boardId} />
         <input type="hidden" name="orgId" value={orgId} />
         <Input

@@ -13,7 +13,6 @@ import { updateTag } from "next/cache";
 export type ListFormState = { ok: boolean; error?: string };
 
 export async function createList(
-  _prev: ListFormState,
   formData: FormData,
 ): Promise<ListFormState> {
   try {
