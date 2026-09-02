@@ -27,20 +27,29 @@ export function MembersList({
         <CardDescription>Collaborators in this organization</CardDescription>
       </CardHeader>
       <CardContent className="divide-y divide-gray-100">
-        <ScrollFade maxHeight="max-h-[58vh]" contentClassName="space-y-3 px-4 py-3">
+        <ScrollFade maxHeight="max-h-[65vh]" contentClassName="space-y-3 px-4 py-3">
           {members.length === 0 ? (
             <p className="text-xs text-gray-500 text-center py-4">No active members found.</p>
           ) : (
-            members.map((member) => (
-              <MemberRow
-                key={member.id}
-                member={member}
-                isAdmin={isAdmin}
-                currentUserId={currentUserId}
-                onChangeRole={onChangeRole}
-                onRemove={onRemove}
-              />
-            ))
+            members
+              .sort((a, b) => {
+                // Current user always comes first
+                if (a.user.id === currentUserId) return -1;
+                if (b.user.id === currentUserId) return 1;
+
+                // Then sort alphabetically
+                return a.user.name.localeCompare(b.user.name);
+              })
+              .map((member) => (
+                <MemberRow
+                  key={member.id}
+                  member={member}
+                  isAdmin={isAdmin}
+                  currentUserId={currentUserId}
+                  onChangeRole={onChangeRole}
+                  onRemove={onRemove}
+                />
+              ))
           )}
         </ScrollFade>
       </CardContent>

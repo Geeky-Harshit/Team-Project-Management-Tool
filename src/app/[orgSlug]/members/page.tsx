@@ -32,7 +32,6 @@ async function MembersPageInner({ params }: PageProps) {
   const { user, role } = await validateOrgAccess(org.id, "viewer", org);
   const isAdmin = role === "admin" || role === "owner";
 
-  // Fetch members and pending invites in parallel directly on the server (0ms client delay!)
   const [dbMembers, dbInvites] = await Promise.all([
     prisma.member.findMany({
       where: { organizationId: org.id },
@@ -43,13 +42,15 @@ async function MembersPageInner({ params }: PageProps) {
       },
       orderBy: { createdAt: "asc" },
     }),
-    prisma.invitation.findMany({
-      where: {
-        organizationId: org.id,
-        status: "pending",
-      },
-      orderBy: { expiresAt: "desc" },
-    }),
+    isAdmin
+      ? prisma.invitation.findMany({
+          where: {
+            organizationId: org.id,
+            status: "pending",
+          },
+          orderBy: { expiresAt: "desc" },
+        })
+      : Promise.resolve([]),
   ]);
 
   const initialMembers: MemberWithUser[] = dbMembers.map((m) => ({

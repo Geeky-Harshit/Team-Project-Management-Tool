@@ -52,6 +52,7 @@ export default function MembersClient({
   }, [orgId]);
 
   const fetchInvites = useCallback(async () => {
+    if (!isAdmin) return;
     try {
       const res = await fetch(`/api/invites?organizationId=${orgId}`);
       if (res.ok) {
@@ -61,7 +62,7 @@ export default function MembersClient({
     } catch (err) {
       console.error("Failed to fetch invites", err);
     }
-  }, [orgId]);
+  }, [orgId, isAdmin]);
 
   // Only run mount fetch if NO initial server data was provided
   useEffect(() => {
@@ -70,10 +71,14 @@ export default function MembersClient({
 
     async function loadMembersAndInvites() {
       try {
-        const [membersRes, invitesRes] = await Promise.all([
-          authClient.organization.listMembers({ query: { organizationId: orgId } }),
-          fetch(`/api/invites?organizationId=${orgId}`).then((r) => (r.ok ? r.json() : [])),
-        ]);
+        const membersPromise = authClient.organization.listMembers({
+          query: { organizationId: orgId },
+        });
+        const invitesPromise = isAdmin
+          ? fetch(`/api/invites?organizationId=${orgId}`).then((r) => (r.ok ? r.json() : []))
+          : Promise.resolve([]);
+
+        const [membersRes, invitesRes] = await Promise.all([membersPromise, invitesPromise]);
 
         if (!isMounted) return;
 
@@ -92,7 +97,7 @@ export default function MembersClient({
           setMembers(typed);
         }
 
-        if (Array.isArray(invitesRes)) {
+        if (isAdmin && Array.isArray(invitesRes)) {
           setInvites(invitesRes as Invite[]);
         }
       } catch (err) {
@@ -105,7 +110,7 @@ export default function MembersClient({
     return () => {
       isMounted = false;
     };
-  }, [orgId, initialMembers.length]);
+  }, [orgId, initialMembers.length, isAdmin]);
 
   const handleRemoveMember = async (memberId: string) => {
     try {
@@ -168,7 +173,7 @@ export default function MembersClient({
   };
 
   return (
-    <div className="flex flex-col gap-6 max-w-4xl mx-auto p-6 pb-0 font-sans">
+    <div className="flex flex-col gap-6 mx-auto font-sans">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Members</h1>
         <p className="text-sm text-gray-500">Manage who has access to this workspace</p>
