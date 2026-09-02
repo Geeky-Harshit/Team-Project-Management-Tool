@@ -12,9 +12,7 @@ import { revalidatePath, updateTag } from "next/cache";
 
 export type BoardFormState = { ok: boolean; error?: string };
 
-export async function createBoard(
-  formData: FormData,
-): Promise<BoardFormState> {
+export async function createBoard(formData: FormData): Promise<BoardFormState> {
   try {
     const parsed = createBoardSchema.parse({
       organizationId: formData.get("organizationId"),

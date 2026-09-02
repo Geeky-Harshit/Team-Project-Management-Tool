@@ -84,7 +84,7 @@ export function InviteForm({ orgId, onInviteSuccess }: InviteFormProps) {
               className="w-full text-xs border border-gray-200 rounded-md p-2 bg-white focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer font-sans"
             >
               <option value="member">Member (Can edit lists & cards)</option>
-              <option value="admin">Admin (Full access except deletion)</option>
+              <option value="admin">Admin (Manage members and boards)</option>
               <option value="viewer">Viewer (Read-only access)</option>
             </select>
           </div>
