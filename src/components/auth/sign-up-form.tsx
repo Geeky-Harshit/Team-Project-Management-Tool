@@ -15,19 +15,36 @@ export function SignUpForm() {
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [showPass, setShowPass] = useState(false)
+    const [reTypePassword, setReTypePassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const [error, setError] = useState("");
+    const [passwordMismatch, setPasswordMismatch] = useState("");
     const [loading, setLoading] = useState(false);
 
     const searchParams = useSearchParams();
     const callbackUrl = getSafeCallbackUrl(searchParams.get("callbackUrl"));
     const signInUrl = `/sign-in?callbackUrl=${encodeURIComponent(callbackUrl)}`;
 
+    function comparePasswords(nextPassword: string, nextConfirm: string) {
+        if (nextConfirm.length > 0 && nextPassword !== nextConfirm) {
+            setPasswordMismatch("Passwords do not match");
+            return false;
+        }
+        setPasswordMismatch("");
+        return true;
+    }
+
     async function handleSubmit(e: React.SubmitEvent) {
         e.preventDefault();
 
         setError("");
+
+        if (!comparePasswords(password, reTypePassword)) {
+            return;
+        }
+
         setLoading(true);
 
         try {
@@ -95,25 +112,64 @@ export function SignUpForm() {
                             <div className="relative">
                                 <Input
                                     id="password"
-                                    type={showPass ? "text" : "password"}
+                                    type={showPassword ? "text" : "password"}
                                     placeholder="Password"
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    onChange={(e) => {
+                                        const nextPassword = e.target.value;
+                                        setPassword(nextPassword);
+                                        comparePasswords(nextPassword, reTypePassword);
+                                    }}
                                     value={password}
                                     required
                                     className="border-gray-300 focus:border-primary focus:ring-primary"
                                 />
                                 <button
                                     type="button"
-                                    onClick={() => setShowPass(!showPass)}
+                                    onClick={() => setShowPassword(!showPassword)}
                                     className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+                                    aria-label={showPassword ? "Hide password" : "Show password"}
                                 >
-                                    {showPass ? (
+                                    {showPassword ? (
                                         <Eye className="h-5 w-5" />
                                     ) : (
                                         <EyeOff className="h-5 w-5" />
                                     )}
                                 </button>
                             </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="reTypePassword" className="text-gray-700">Confirm Password</Label>
+                            <div className="relative">
+                                <Input
+                                    id="reTypePassword"
+                                    type={showConfirmPassword ? "text" : "password"}
+                                    placeholder="Confirm password"
+                                    onChange={(e) => {
+                                        const nextConfirm = e.target.value;
+                                        setReTypePassword(nextConfirm);
+                                        comparePasswords(password, nextConfirm);
+                                    }}
+                                    value={reTypePassword}
+                                    required
+                                    aria-invalid={passwordMismatch ? true : undefined}
+                                    className="border-gray-300 focus:border-primary focus:ring-primary"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+                                    aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                                >
+                                    {showConfirmPassword ? (
+                                        <Eye className="h-5 w-5" />
+                                    ) : (
+                                        <EyeOff className="h-5 w-5" />
+                                    )}
+                                </button>
+                            </div>
+                            {passwordMismatch && (
+                                <p className="text-sm text-destructive">{passwordMismatch}</p>
+                            )}
                         </div>
                     </CardContent>
                     <CardFooter className="flex flex-col space-y-4">
