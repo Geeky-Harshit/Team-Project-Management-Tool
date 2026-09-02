@@ -27,7 +27,7 @@ export function MembersList({
         <CardDescription>Collaborators in this organization</CardDescription>
       </CardHeader>
       <CardContent className="divide-y divide-gray-100">
-        <ScrollFade maxHeight="max-h-[20rem]" contentClassName="space-y-3 px-4 py-3">
+        <ScrollFade maxHeight="max-h-[58vh]" contentClassName="space-y-3 px-4 py-3">
           {members.length === 0 ? (
             <p className="text-xs text-gray-500 text-center py-4">No active members found.</p>
           ) : (

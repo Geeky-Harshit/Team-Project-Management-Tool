@@ -168,14 +168,14 @@ export default function MembersClient({
   };
 
   return (
-    <div className="flex flex-col gap-6 max-w-4xl mx-auto p-6 font-sans">
+    <div className="flex flex-col gap-6 max-w-4xl mx-auto p-6 pb-0 font-sans">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Members</h1>
         <p className="text-sm text-gray-500">Manage who has access to this workspace</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-        <div className="md:col-span-2 flex flex-col gap-6">
+        <div className={isAdmin ? "md:col-span-2" : "md:col-span-3"}>
           <MembersList
             members={members}
             isAdmin={isAdmin}
@@ -183,15 +183,17 @@ export default function MembersClient({
             onChangeRole={handleChangeRole}
             onRemove={handleRemoveMember}
           />
-          <PendingInvites
-            invites={invites}
-            onRemoveInvite={handleRemoveInvite}
-            removingInvite={removingInviteToken}
-          />
         </div>
 
         {isAdmin && (
-          <InviteForm orgId={orgId} onInviteSuccess={fetchInvites} />
+          <div className="flex flex-col gap-6">
+            <InviteForm orgId={orgId} onInviteSuccess={fetchInvites} />
+            <PendingInvites
+              invites={invites}
+              onRemoveInvite={handleRemoveInvite}
+              removingInvite={removingInviteToken}
+            />
+          </div>
         )}
       </div>
     </div>
