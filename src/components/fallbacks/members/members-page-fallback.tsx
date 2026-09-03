@@ -26,15 +26,16 @@ function MemberRowFallback({ isAdmin }: { isAdmin: boolean }) {
 
 export function MembersPageFallback({ isAdmin = false }: { isAdmin?: boolean }) {
   return (
-    <div className="mx-auto flex flex-col gap-6 font-sans animate-pulse">
-      <div>
-        <div className="h-7 w-28 rounded-md bg-gray-200" />
-        <div className="mt-2 h-4 w-64 rounded-md bg-gray-100" />
+    <div className="flex w-full flex-col gap-6 font-sans animate-pulse">
+      <div className="flex flex-col gap-1">
+        <div className="h-3 w-20 rounded bg-orange-100" />
+        <div className="h-8 w-32 rounded-md bg-gray-200" />
+        <div className="h-4 w-72 rounded-md bg-gray-100" />
       </div>
 
       <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-3">
         <div className={isAdmin ? "md:col-span-2" : "md:col-span-3"}>
-          <Card className="border-gray-200 shadow-sm font-sans">
+          <Card className="rounded-xl border border-gray-200 font-sans shadow-xs">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold">
                 <div className="h-5 w-36 rounded-md bg-gray-200" />
@@ -55,7 +56,7 @@ export function MembersPageFallback({ isAdmin = false }: { isAdmin?: boolean }) 
 
         {isAdmin && (
           <div className="flex flex-col gap-6">
-            <Card className="border-gray-200 shadow-sm font-sans">
+            <Card className="rounded-xl border border-gray-200 font-sans shadow-xs">
               <CardHeader className="pb-3">
                 <div className="h-5 w-32 rounded-md bg-gray-200" />
                 <div className="h-3.5 w-48 rounded-md bg-gray-100" />
@@ -73,7 +74,7 @@ export function MembersPageFallback({ isAdmin = false }: { isAdmin?: boolean }) 
               </CardContent>
             </Card>
 
-            <Card className="border-gray-200 shadow-sm font-sans">
+            <Card className="rounded-xl border border-gray-200 font-sans shadow-xs">
               <CardHeader className="pb-3">
                 <div className="h-5 w-40 rounded-md bg-gray-200" />
                 <div className="h-3.5 w-56 rounded-md bg-gray-100" />

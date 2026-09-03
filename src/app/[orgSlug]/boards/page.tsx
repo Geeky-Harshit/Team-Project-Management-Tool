@@ -37,37 +37,37 @@ async function BoardsPageInner({ params }: PageProps) {
   const canCreate = canEditCards(role);
 
   return (
-    <div className="flex w-full flex-col gap-8 font-sans">
-      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Workspace
-            </p>
-            <h1 className="mt-2 text-3xl font-bold text-gray-900">Boards</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              Manage planning spaces and workflows for {org.name}
-            </p>
-          </div>
-          {canManage && (
-            <Link
-              href={`/${orgSlug}/boards/archived`}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 shadow-2xs transition hover:bg-gray-50"
-            >
-              <Archive className="h-4 w-4" />
-              Archived Boards
-            </Link>
-          )}
+    <div className="flex w-full flex-col gap-6 font-sans">
+      <div className="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+            Workspace
+          </p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+            Boards
+          </h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Manage planning spaces and workflows for {org.name}
+          </p>
         </div>
+        {canManage && (
+          <Link
+            href={`/${orgSlug}/boards/archived`}
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-xs font-semibold text-gray-700 shadow-2xs transition hover:bg-gray-50"
+          >
+            <Archive className="h-4 w-4 text-gray-500" />
+            Archived Boards
+          </Link>
+        )}
+      </div>
 
-        <Suspense fallback={<BoardsGridFallback canCreate={canCreate} />}>
-          <BoardsGridLive
-            orgId={org.id}
-            orgSlug={orgSlug}
-            canCreate={canCreate}
-          />
-        </Suspense>
-      </section>
+      <Suspense fallback={<BoardsGridFallback canCreate={canCreate} />}>
+        <BoardsGridLive
+          orgId={org.id}
+          orgSlug={orgSlug}
+          canCreate={canCreate}
+        />
+      </Suspense>
     </div>
   );
 }
@@ -76,15 +76,13 @@ export default function BoardsPage({ params }: PageProps) {
   return (
     <Suspense
       fallback={
-        <div className="flex w-full flex-col gap-8 font-sans">
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="animate-pulse">
-              <div className="h-3 w-20 rounded bg-gray-200" />
-              <div className="mt-2 h-8 w-28 rounded bg-gray-200" />
-              <div className="mt-1 h-4 w-72 rounded bg-gray-100" />
-            </div>
-            <BoardsGridFallback />
-          </section>
+        <div className="flex w-full flex-col gap-6 font-sans">
+          <div className="flex shrink-0 flex-col gap-1 animate-pulse">
+            <div className="h-3 w-20 rounded bg-orange-100" />
+            <div className="mt-1 h-8 w-28 rounded bg-gray-200" />
+            <div className="mt-1 h-4 w-72 rounded bg-gray-100" />
+          </div>
+          <BoardsGridFallback />
         </div>
       }
     >

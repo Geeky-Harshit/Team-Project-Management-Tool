@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function WorkloadFallback() {
   return (
-    <Card className="h-full min-h-0 animate-pulse border-gray-200 font-sans shadow-sm">
+    <Card className="h-full min-h-0 animate-pulse rounded-xl border border-gray-200 font-sans shadow-xs">
       <CardHeader className="shrink-0">
         <CardTitle className="text-base font-semibold">
           <div className="h-5 w-44 rounded-md bg-gray-200" />

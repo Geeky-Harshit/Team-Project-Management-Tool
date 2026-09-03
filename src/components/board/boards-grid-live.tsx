@@ -93,18 +93,18 @@ export async function BoardsGridLive({
 
   return (
     <>
-      <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-          <p className="text-xs font-semibold text-gray-500">Active Boards</p>
-          <p className="mt-1 text-2xl font-bold text-gray-900">{totalBoards}</p>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-xs">
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Active Boards</p>
+          <p className="mt-1.5 text-2xl font-bold tracking-tight text-gray-900">{totalBoards}</p>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-          <p className="text-xs font-semibold text-gray-500">Total Tasks</p>
-          <p className="mt-1 text-2xl font-bold text-gray-900">{totalCards}</p>
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-xs">
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Total Tasks</p>
+          <p className="mt-1.5 text-2xl font-bold tracking-tight text-gray-900">{totalCards}</p>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-          <p className="text-xs font-semibold text-gray-500">Overdue Tasks</p>
-          <p className="mt-1 text-2xl font-bold text-red-600">{totalOverdue}</p>
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-xs">
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Overdue Tasks</p>
+          <p className="mt-1.5 text-2xl font-bold tracking-tight text-red-600">{totalOverdue}</p>
         </div>
       </div>
 
@@ -140,7 +140,7 @@ export async function BoardsGridLive({
                       Updated {new Date(board.updatedAt).toLocaleDateString()}
                     </span>
                     {stats && stats.overdue > 0 && (
-                      <span className="font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded-full text-[11px]">
+                      <span className="rounded-full border border-red-200/60 bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600">
                         {stats.overdue} overdue
                       </span>
                     )}

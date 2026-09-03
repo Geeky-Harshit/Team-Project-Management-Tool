@@ -1,5 +1,6 @@
 import RestoreBoardButton from "@/components/board/restore-board-button";
 import { ArchivedBoardsFallback } from "@/components/fallbacks/boards/archived-boards-fallback";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
 import { getCachedOrgBySlug } from "@/lib/data-cache";
@@ -75,11 +76,10 @@ async function ArchivedBoardsList({
           There are currently no archived boards in this workspace.
         </p>
         <div className="mt-6">
-          <Link
-            href={`/${orgSlug}/boards`}
-            className="inline-flex rounded-lg bg-black px-4 py-2 text-xs font-semibold text-white hover:bg-gray-800"
-          >
-            Go to Boards
+          <Link href={`/${orgSlug}/boards`}>
+            <Button className="bg-primary font-semibold text-primary-foreground shadow-xs hover:bg-primary/90">
+              Go to Boards
+            </Button>
           </Link>
         </div>
       </div>
@@ -137,28 +137,27 @@ async function ArchivedBoardsPageInner({ params }: PageProps) {
   }
 
   return (
-    <div className="flex w-full flex-col gap-8 font-sans">
-      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <div>
-          <Link
-            href={`/${orgSlug}/boards`}
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 transition hover:text-gray-900"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Back to Active Boards
-          </Link>
-          <h1 className="mt-2 text-2xl font-bold text-gray-900">Archived Boards</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Recover boards that have been archived in this organization. Only admins and owners can restore boards.
-          </p>
-        </div>
+    <div className="flex w-full flex-col gap-6 font-sans">
+      <div className="flex flex-col gap-1">
+        <Link
+          href={`/${orgSlug}/boards`}
+          className="mb-1 inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 transition hover:text-gray-900"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back to Active Boards
+        </Link>
+        <p className="text-xs font-semibold uppercase tracking-wider text-primary">Archive</p>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+          Archived Boards
+        </h1>
+        <p className="text-sm text-gray-500">
+          Recover boards that have been archived in this organization.
+        </p>
+      </div>
 
-        <div className="mt-6">
-          <Suspense fallback={<ArchivedBoardsFallback />}>
-            <ArchivedBoardsList orgId={org.id} orgSlug={orgSlug} />
-          </Suspense>
-        </div>
-      </section>
+      <Suspense fallback={<ArchivedBoardsFallback />}>
+        <ArchivedBoardsList orgId={org.id} orgSlug={orgSlug} />
+      </Suspense>
     </div>
   );
 }
@@ -167,17 +166,14 @@ export default function ArchivedBoardsPage({ params }: PageProps) {
   return (
     <Suspense
       fallback={
-        <div className="flex w-full flex-col gap-8 font-sans">
-          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="animate-pulse">
-              <div className="h-3.5 w-36 rounded bg-gray-200" />
-              <div className="mt-2 h-7 w-48 rounded bg-gray-200" />
-              <div className="mt-1 h-4 w-96 max-w-full rounded bg-gray-100" />
-            </div>
-            <div className="mt-6">
-              <ArchivedBoardsFallback />
-            </div>
-          </section>
+        <div className="flex w-full flex-col gap-6 font-sans">
+          <div className="flex flex-col gap-1 animate-pulse">
+            <div className="mb-1 h-3.5 w-36 rounded bg-gray-200" />
+            <div className="h-3 w-16 rounded bg-orange-100" />
+            <div className="h-8 w-48 rounded bg-gray-200" />
+            <div className="h-4 w-96 max-w-full rounded bg-gray-100" />
+          </div>
+          <ArchivedBoardsFallback />
         </div>
       }
     >

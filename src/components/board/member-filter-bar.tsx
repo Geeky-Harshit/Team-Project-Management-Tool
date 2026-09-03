@@ -74,7 +74,7 @@ export default function MemberFilterBar({
                         onSelectAssignee?.(isSelected ? null : member.id)
                       }
                       className={`relative rounded-full transition-all focus:outline-none ${isSelected
-                          ? "ring-2 ring-blue-600 ring-offset-2 z-20 scale-105"
+                          ? "z-20 scale-105 ring-2 ring-primary ring-offset-2"
                           : "hover:z-10 hover:scale-105"
                         }`}
                     >
@@ -83,7 +83,7 @@ export default function MemberFilterBar({
                           src={member.image || undefined}
                           alt={member.name}
                         />
-                        <AvatarFallback className="text-[11px] bg-blue-100 text-blue-700 font-bold">
+                        <AvatarFallback className="bg-primary/15 text-[11px] font-bold text-primary">
                           {member.name
                             ? member.name.slice(0, 2).toUpperCase()
                             : "U"}
@@ -111,8 +111,8 @@ export default function MemberFilterBar({
                             selectedAssigneeId === member.id ? null : member.id
                           )
                         }
-                        className={`flex items-center gap-2.5 cursor-pointer rounded-md px-2 py-1.5 text-xs ${selectedAssigneeId === member.id
-                            ? "bg-blue-50 font-semibold text-blue-700"
+                        className={`flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-xs ${selectedAssigneeId === member.id
+                            ? "bg-primary/10 font-semibold text-primary"
                             : ""
                           }`}
                       >
@@ -121,7 +121,7 @@ export default function MemberFilterBar({
                             src={member.image || undefined}
                             alt={member.name}
                           />
-                          <AvatarFallback className="text-[10px] bg-blue-100 text-blue-700 font-bold">
+                          <AvatarFallback className="bg-primary/15 text-[10px] font-bold text-primary">
                             {member.name
                               ? member.name.slice(0, 2).toUpperCase()
                               : "U"}

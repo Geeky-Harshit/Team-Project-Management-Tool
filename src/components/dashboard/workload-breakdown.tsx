@@ -4,7 +4,7 @@ import { ScrollFade } from "../scroll-fade";
 
 export function WorkloadBreakdown({ entries }: { entries: WorkloadEntry[] }) {
   return (
-    <Card className="h-full min-h-0 border-gray-200 shadow-sm font-sans">
+    <Card className="h-full min-h-0 rounded-xl border border-gray-200 font-sans shadow-xs">
       <CardHeader className="shrink-0">
         <CardTitle className="text-base font-semibold">Workload Breakdown</CardTitle>
       </CardHeader>

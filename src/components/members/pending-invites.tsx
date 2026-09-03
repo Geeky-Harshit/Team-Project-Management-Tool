@@ -18,7 +18,7 @@ export function PendingInvites({
   if (invites.length === 0) return null;
 
   return (
-    <Card className="border-gray-200 shadow-sm font-sans">
+    <Card className="rounded-xl border border-gray-200 font-sans shadow-xs">
       <CardHeader className="pb-3">
         <CardTitle className="text-base font-semibold">Pending Invitations</CardTitle>
         <CardDescription>Sent invitations that have not been accepted yet</CardDescription>

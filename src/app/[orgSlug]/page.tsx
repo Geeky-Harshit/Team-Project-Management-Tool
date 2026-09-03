@@ -38,11 +38,14 @@ async function OrgDashboardPageInner({
   await validateOrgAccess(org.id, "viewer", org);
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col gap-4 overflow-hidden font-sans bg-white p-5 rounded-lg">
-      <div className="shrink-0">
-        <h1 className="text-2xl font-bold text-gray-900">{org.name} Dashboard</h1>
+    <div className="flex h-full min-h-0 flex-1 flex-col gap-6 overflow-hidden font-sans">
+      <div className="flex shrink-0 flex-col gap-1">
+        <p className="text-xs font-semibold uppercase tracking-wider text-primary">Workspace</p>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+          {org.name} Dashboard
+        </h1>
         <p className="text-sm text-gray-500">
-          Overview of activities, boards, and members
+          Overview of activities, boards, and team workload
         </p>
       </div>
 
@@ -83,10 +86,11 @@ export default function OrgDashboardPage({
   return (
     <Suspense
       fallback={
-        <div className="flex h-full min-h-0 flex-1 flex-col gap-2 overflow-hidden font-sans">
-          <div className="shrink-0">
-            <div className="h-7 w-64 animate-pulse rounded-lg bg-gray-200" />
-            <div className="mt-1 h-4 w-80 animate-pulse rounded bg-gray-100" />
+        <div className="flex h-full min-h-0 flex-1 flex-col gap-6 overflow-hidden font-sans">
+          <div className="flex shrink-0 flex-col gap-1">
+            <div className="h-3 w-20 animate-pulse rounded bg-orange-100" />
+            <div className="h-8 w-64 animate-pulse rounded-lg bg-gray-200" />
+            <div className="h-4 w-80 animate-pulse rounded bg-gray-100" />
           </div>
           <div className="shrink-0">
             <StatsFallback />

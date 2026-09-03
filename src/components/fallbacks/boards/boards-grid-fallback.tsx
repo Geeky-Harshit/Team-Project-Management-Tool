@@ -17,19 +17,19 @@ function BoardCardFallback() {
 
 export function BoardsGridFallback({ canCreate = false }: { canCreate?: boolean }) {
   return (
-    <div className="mt-5 animate-pulse">
+    <div className="animate-pulse">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-xs">
           <div className="h-3 w-24 rounded bg-gray-200" />
-          <div className="mt-2 h-7 w-10 rounded bg-gray-200" />
+          <div className="mt-1.5 h-7 w-10 rounded bg-gray-200" />
         </div>
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-xs">
           <div className="h-3 w-20 rounded bg-gray-200" />
-          <div className="mt-2 h-7 w-10 rounded bg-gray-200" />
+          <div className="mt-1.5 h-7 w-10 rounded bg-gray-200" />
         </div>
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-xs">
           <div className="h-3 w-24 rounded bg-gray-200" />
-          <div className="mt-2 h-7 w-10 rounded bg-red-100" />
+          <div className="mt-1.5 h-7 w-10 rounded bg-red-100" />
         </div>
       </div>
 

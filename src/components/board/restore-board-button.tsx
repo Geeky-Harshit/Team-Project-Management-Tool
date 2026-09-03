@@ -1,6 +1,7 @@
 "use client";
 
 import { restoreBoard } from "@/actions/boards-action";
+import { Button } from "@/components/ui/button";
 import { Loader2, RotateCcw } from "lucide-react";
 import { useTransition } from "react";
 import { toast } from "sonner";
@@ -19,15 +20,17 @@ export default function RestoreBoardButton({
   const handleRestore = () => {
     startTransition(async () => {
       await restoreBoard(boardId, orgId);
-      toast.success("board restored")
+      toast.success("board restored");
     });
   };
 
   return (
-    <button
+    <Button
+      variant="outline"
+      size="sm"
       onClick={handleRestore}
       disabled={isPending}
-      className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:text-gray-900 disabled:opacity-50"
+      className="border-gray-200 text-gray-700 hover:bg-gray-50"
     >
       {isPending ? (
         <>
@@ -40,6 +43,6 @@ export default function RestoreBoardButton({
           Restore
         </>
       )}
-    </button>
+    </Button>
   );
 }

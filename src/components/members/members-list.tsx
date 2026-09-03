@@ -21,7 +21,7 @@ export function MembersList({
   onRemove,
 }: MembersListProps) {
   return (
-    <Card className="border-gray-200 shadow-sm font-sans">
+    <Card className="rounded-xl border border-gray-200 font-sans shadow-xs">
       <CardHeader className="pb-3">
         <CardTitle className="text-base font-semibold">Active Members</CardTitle>
         <CardDescription>Collaborators in this organization</CardDescription>

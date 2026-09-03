@@ -93,7 +93,7 @@ export function WorkspaceActivityFeed({
   }, [activities, startIndex, endIndex]);
 
   return (
-    <Card className="flex h-full min-h-0 flex-col border-gray-200 font-sans shadow-sm">
+    <Card className="flex h-full min-h-0 flex-col rounded-xl border border-gray-200 font-sans shadow-xs">
       <CardHeader className="flex shrink-0 flex-row items-center justify-between border-b border-gray-100 pb-3">
         <CardTitle className="flex items-center gap-2 text-base font-semibold">
           <ActivityIcon className="h-4 w-4 text-primary" />

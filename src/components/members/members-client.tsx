@@ -173,10 +173,11 @@ export default function MembersClient({
   };
 
   return (
-    <div className="flex flex-col gap-6 mx-auto font-sans">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Members</h1>
-        <p className="text-sm text-gray-500">Manage who has access to this workspace</p>
+    <div className="flex w-full flex-col gap-6 font-sans">
+      <div className="flex flex-col gap-1">
+        <p className="text-xs font-semibold uppercase tracking-wider text-primary">Workspace</p>
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Members</h1>
+        <p className="text-sm text-gray-500">Manage collaborators and roles for this workspace</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">

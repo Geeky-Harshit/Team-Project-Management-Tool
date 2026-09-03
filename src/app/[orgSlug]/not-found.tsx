@@ -16,7 +16,7 @@ export default function OrgNotFoundPage() {
         <div className="mt-6">
           <Link
             href="/dashboard"
-            className="inline-flex rounded-md bg-black px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800"
+            className="inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-xs hover:bg-primary/90"
           >
             Back to Dashboard
           </Link>
