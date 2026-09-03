@@ -61,13 +61,11 @@ async function BoardsPageInner({ params }: PageProps) {
         )}
       </div>
 
-      <Suspense fallback={<BoardsGridFallback canCreate={canCreate} />}>
         <BoardsGridLive
           orgId={org.id}
           orgSlug={orgSlug}
           canCreate={canCreate}
         />
-      </Suspense>
     </div>
   );
 }

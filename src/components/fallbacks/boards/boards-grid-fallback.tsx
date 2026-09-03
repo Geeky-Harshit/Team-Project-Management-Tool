@@ -15,7 +15,7 @@ function BoardCardFallback() {
   );
 }
 
-export function BoardsGridFallback({ canCreate = false }: { canCreate?: boolean }) {
+export function BoardsGridFallback() {
   return (
     <div className="animate-pulse">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -40,13 +40,7 @@ export function BoardsGridFallback({ canCreate = false }: { canCreate?: boolean 
         </div>
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {canCreate && (
-            <Card className="flex h-44 flex-col items-center justify-center border-2 border-dashed border-gray-300 shadow-none">
-              <div className="h-6 w-6 rounded bg-gray-200" />
-              <div className="mt-2 h-4 w-32 rounded bg-gray-100" />
-            </Card>
-          )}
-          {(canCreate ? [1, 2, 3] : [1, 2, 3, 4]).map((i) => (
+          {[1, 2, 3, 4].map((i) => (
             <BoardCardFallback key={i} />
           ))}
         </div>
