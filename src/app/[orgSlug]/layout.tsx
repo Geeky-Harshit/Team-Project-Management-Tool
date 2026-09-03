@@ -1,36 +1,25 @@
-import { getSession } from "@/lib/auth/auth";
-import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
+import { OrgLayoutFallback } from "@/components/fallbacks/layout/org-layout-fallback";
 import Sidebar from "@/components/sidebar";
 import { OrgProvider } from "@/context/org-context";
-import OrgNotFoundPage from "./not-found";
+import { getSession } from "@/lib/auth/auth";
 import { getCachedOrgBySlug } from "@/lib/data-cache";
+import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import OrgNotFoundPage from "./not-found";
 
 interface LayoutProps {
   children: React.ReactNode;
   params: Promise<{ orgSlug: string }>;
 }
 
-function OrgLayoutFallback() {
-  return (
-    <div className="flex h-[calc(100vh-4rem)] flex-col bg-gray-50 md:flex-row">
-      <aside className="w-full shrink-0 border-b border-gray-200 bg-white md:w-64 md:border-b-0 md:border-r">
-        <div className="animate-pulse p-4">
-          <div className="h-12 rounded-lg bg-gray-100" />
-          <div className="mt-4 h-9 rounded-md bg-gray-100" />
-          <div className="mt-2 h-9 rounded-md bg-gray-100" />
-        </div>
-      </aside>
-      <main className="flex-1 p-4 md:p-8">
-        <div className="h-32 animate-pulse rounded-2xl bg-gray-100" />
-      </main>
-    </div>
-  );
-}
-
-async function OrgLayoutInner({ children, params }: LayoutProps) {
-  const { orgSlug } = await params;
+async function OrgLayoutInner({
+  children,
+  orgSlug,
+}: {
+  children: React.ReactNode;
+  orgSlug: string;
+}) {
   const session = await getSession();
 
   if (!session) {
@@ -74,10 +63,12 @@ async function OrgLayoutInner({ children, params }: LayoutProps) {
   );
 }
 
-export default function OrgLayout({ children, params }: LayoutProps) {
+export default async function OrgLayout({ children, params }: LayoutProps) {
+  const { orgSlug } = await params;
+
   return (
-    <Suspense fallback={<OrgLayoutFallback />}>
-      <OrgLayoutInner params={params}>{children}</OrgLayoutInner>
+    <Suspense fallback={<OrgLayoutFallback orgSlug={orgSlug} />}>
+      <OrgLayoutInner orgSlug={orgSlug}>{children}</OrgLayoutInner>
     </Suspense>
   );
 }
