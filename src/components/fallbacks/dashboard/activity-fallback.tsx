@@ -2,14 +2,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function ActivityFallback() {
   return (
-    <Card className="flex h-[500px] flex-col border-gray-200 font-sans shadow-sm animate-pulse">
-      <CardHeader className="flex flex-row items-center justify-between border-b border-gray-100 pb-3">
+    <Card className="flex h-full min-h-0 flex-col animate-pulse border-gray-200 font-sans shadow-sm">
+      <CardHeader className="flex shrink-0 flex-row items-center justify-between border-b border-gray-100 pb-3">
         <CardTitle className="flex items-center gap-2 text-base font-semibold">
           <div className="h-4 w-4 rounded bg-gray-200" />
           <div className="h-5 w-40 rounded-md bg-gray-200" />
         </CardTitle>
       </CardHeader>
-      <CardContent className="min-h-0 flex-1 space-y-2 px-4 py-3">
+      <CardContent className="min-h-0 flex-1 space-y-2 overflow-hidden px-4 py-3">
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <div
             key={i}

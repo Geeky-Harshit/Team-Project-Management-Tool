@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity } from "@/types";
 import { Activity as ActivityIcon, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ScrollFade } from "../scroll-fade";
 
 interface WorkspaceActivityFeedProps {
   initialActivities: Activity[];
@@ -93,22 +92,21 @@ export function WorkspaceActivityFeed({
   }, [activities, startIndex, endIndex]);
 
   return (
-    <Card className="border-gray-200 shadow-sm flex flex-col font-sans h-[500px]">
-      <CardHeader className="pb-3 border-b border-gray-100 flex flex-row items-center justify-between">
-        <CardTitle className="text-base font-semibold flex items-center gap-2">
+    <Card className="flex h-full min-h-0 flex-col border-gray-200 font-sans shadow-sm">
+      <CardHeader className="flex shrink-0 flex-row items-center justify-between border-b border-gray-100 pb-3">
+        <CardTitle className="flex items-center gap-2 text-base font-semibold">
           <ActivityIcon className="h-4 w-4 text-primary" />
           Workspace Activity
         </CardTitle>
       </CardHeader>
-      <ScrollFade maxHeight="h-full" contentClassName="mt-3 p-1 flex flex-col min-h-24">
-        <CardContent className="p-0 relative flex-1 overflow-hidden min-h-0">
-          <div
-            ref={containerRef}
-            onScroll={updateScrollState}
-            className="h-full overflow-y-auto px-4 py-2"
-          >
+      <CardContent className="relative min-h-0 flex-1 p-0">
+        <div
+          ref={containerRef}
+          onScroll={updateScrollState}
+          className="h-full overflow-y-auto px-4 py-2"
+        >
             {activities.length === 0 ? (
-              <div className="flex h-full min-h-40 items-center justify-center text-center">
+              <div className="flex h-full items-center justify-center text-center">
                 <p className="text-xs text-gray-500">No recent workspace activity.</p>
               </div>
             ) : (
@@ -154,9 +152,8 @@ export function WorkspaceActivityFeed({
                 <Loader2 className="h-4 w-4 animate-spin text-primary" />
               </div>
             )}
-          </div>
-        </CardContent>
-      </ScrollFade>
+        </div>
+      </CardContent>
     </Card>
   );
 }

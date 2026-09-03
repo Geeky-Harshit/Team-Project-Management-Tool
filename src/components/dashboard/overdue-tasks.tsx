@@ -4,11 +4,15 @@ import { ScrollFade } from "../scroll-fade";
 
 export function OverdueTasksList({ tasks }: { tasks: Card[] }) {
   return (
-    <UICard className="border-gray-200 shadow-sm font-sans">
-      <CardHeader>
+    <UICard className="h-full min-h-0 border-gray-200 shadow-sm font-sans">
+      <CardHeader className="shrink-0">
         <CardTitle className="text-base font-semibold">Overdue Tasks</CardTitle>
       </CardHeader>
-      <ScrollFade maxHeight="max-h-[35vh]" contentClassName="mt-3 p-1 flex flex-col min-h-24">
+      <ScrollFade
+        className="h-full min-h-0 flex-1"
+        maxHeight="h-full"
+        contentClassName="mt-0 p-1 flex flex-col"
+      >
         <CardContent className="space-y-3">
           {tasks.length === 0 ? (
             <p className="text-xs text-gray-500">No overdue tasks. Nice work!</p>

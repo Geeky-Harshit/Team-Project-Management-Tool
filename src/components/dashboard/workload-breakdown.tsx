@@ -4,12 +4,16 @@ import { ScrollFade } from "../scroll-fade";
 
 export function WorkloadBreakdown({ entries }: { entries: WorkloadEntry[] }) {
   return (
-    <Card className="border-gray-200 shadow-sm font-sans">
-      <CardHeader>
+    <Card className="h-full min-h-0 border-gray-200 shadow-sm font-sans">
+      <CardHeader className="shrink-0">
         <CardTitle className="text-base font-semibold">Workload Breakdown</CardTitle>
       </CardHeader>
-      <CardContent className="p-0">
-        <ScrollFade maxHeight="max-h-[20rem]" contentClassName="space-y-3 px-4 py-3">
+      <CardContent className="flex min-h-0 flex-1 flex-col p-0">
+        <ScrollFade
+          className="h-full min-h-0 flex-1"
+          maxHeight="h-full"
+          contentClassName="space-y-3 px-4 py-3"
+        >
           {entries.length === 0 ? (
             <p className="text-xs text-gray-500">No tasks assigned to members.</p>
           ) : (

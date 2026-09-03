@@ -2,13 +2,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function WorkloadFallback() {
   return (
-    <Card className="border-gray-200 font-sans shadow-sm animate-pulse">
-      <CardHeader>
+    <Card className="h-full min-h-0 animate-pulse border-gray-200 font-sans shadow-sm">
+      <CardHeader className="shrink-0">
         <CardTitle className="text-base font-semibold">
           <div className="h-5 w-44 rounded-md bg-gray-200" />
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3 px-4 py-3">
+      <CardContent className="min-h-0 flex-1 space-y-3 overflow-hidden px-4 py-3">
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="flex items-center justify-between gap-3 py-1">
             <div className="flex min-w-0 items-center gap-2.5">
