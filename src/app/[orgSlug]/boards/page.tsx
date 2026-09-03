@@ -1,4 +1,5 @@
 import { BoardsGridLive } from "@/components/board/boards-grid-live";
+import { BoardsGridFallback } from "@/components/fallbacks/boards/boards-grid-fallback";
 import { canEditCards, canManageOrg } from "@/lib/auth/permissions";
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
 import { getCachedOrgBySlug } from "@/lib/data-cache";
@@ -23,27 +24,6 @@ export async function generateMetadata({
     title: `${org.name} | Boards`,
     description: `Kanban boards and workflows for ${org.name}.`,
   };
-}
-
-function BoardsGridFallback() {
-  return (
-    <div className="mt-5 animate-pulse">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="h-20 rounded-xl bg-gray-100" />
-        <div className="h-20 rounded-xl bg-gray-100" />
-        <div className="h-20 rounded-xl bg-gray-100" />
-      </div>
-      <div className="mt-8 mb-4 h-5 w-32 rounded bg-gray-200" />
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-44 rounded-xl border border-gray-200 bg-white"
-          />
-        ))}
-      </div>
-    </div>
-  );
 }
 
 async function BoardsPageInner({ params }: PageProps) {
@@ -80,7 +60,7 @@ async function BoardsPageInner({ params }: PageProps) {
           )}
         </div>
 
-        <Suspense fallback={<BoardsGridFallback />}>
+        <Suspense fallback={<BoardsGridFallback canCreate={canCreate} />}>
           <BoardsGridLive
             orgId={org.id}
             orgSlug={orgSlug}
