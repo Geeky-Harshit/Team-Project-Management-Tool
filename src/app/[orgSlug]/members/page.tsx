@@ -1,4 +1,8 @@
+// src/app/[orgSlug]/members/page.tsx
+
+import { MembersPageFallback } from "@/components/fallbacks/members/members-page-fallback";
 import MembersClient from "@/components/members/members-client";
+import { canManageOrg } from "@/lib/auth/permissions";
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
 import { getCachedOrgBySlug } from "@/lib/data-cache";
 import { prisma } from "@/lib/prisma";
@@ -6,7 +10,6 @@ import { Invite, MemberWithUser, Role } from "@/types";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import MembersLoading from "./loading";
 
 interface PageProps {
   params: Promise<{ orgSlug: string }>;
@@ -23,18 +26,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-async function MembersPageInner({ params }: PageProps) {
-  const { orgSlug } = await params;
-
-  const org = await getCachedOrgBySlug(orgSlug);
-  if (!org) notFound();
-
-  const { user, role } = await validateOrgAccess(org.id, "viewer", org);
-  const isAdmin = role === "admin" || role === "owner";
-
+async function MembersPageInner({
+  orgId,
+  currentUserId,
+  isAdmin,
+}: {
+  orgId: string;
+  currentUserId: string;
+  isAdmin: boolean;
+}) {
+  // Heavy DB queries run while Suspense shows the role-specific skeleton
   const [dbMembers, dbInvites] = await Promise.all([
     prisma.member.findMany({
-      where: { organizationId: org.id },
+      where: { organizationId: orgId },
       include: {
         user: {
           select: { id: true, name: true, email: true, image: true },
@@ -44,12 +48,12 @@ async function MembersPageInner({ params }: PageProps) {
     }),
     isAdmin
       ? prisma.invitation.findMany({
-          where: {
-            organizationId: org.id,
-            status: "pending",
-          },
-          orderBy: { expiresAt: "desc" },
-        })
+        where: {
+          organizationId: orgId,
+          status: "pending",
+        },
+        orderBy: { expiresAt: "desc" },
+      })
       : Promise.resolve([]),
   ]);
 
@@ -77,19 +81,32 @@ async function MembersPageInner({ params }: PageProps) {
 
   return (
     <MembersClient
-      orgId={org.id}
+      orgId={orgId}
       isAdmin={isAdmin}
-      currentUserId={user.id}
+      currentUserId={currentUserId}
       initialMembers={initialMembers}
       initialInvites={initialInvites}
     />
   );
 }
 
-export default function MembersPage({ params }: PageProps) {
+export default async function MembersPage({ params }: PageProps) {
+  const { orgSlug } = await params;
+
+  const org = await getCachedOrgBySlug(orgSlug);
+  if (!org) notFound();
+
+  // Fast permission check (~1-3ms)
+  const { user, role } = await validateOrgAccess(org.id, "viewer", org);
+  const isAdmin = canManageOrg(role);
+
   return (
-    <Suspense fallback={<MembersLoading />}>
-      <MembersPageInner params={params} />
+    <Suspense fallback={<MembersPageFallback isAdmin={isAdmin} />}>
+      <MembersPageInner
+        orgId={org.id}
+        currentUserId={user.id}
+        isAdmin={isAdmin}
+      />
     </Suspense>
   );
 }
