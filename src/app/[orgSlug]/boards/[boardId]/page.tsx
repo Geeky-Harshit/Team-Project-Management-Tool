@@ -1,4 +1,5 @@
 import BoardView from "@/components/board/board-view";
+import { BoardPageFallback } from "@/components/fallbacks/boards/board-page-fallback";
 import { canEditCards, canManageOrg } from "@/lib/auth/permissions";
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
 import { getCachedBoard, getCachedOrgBySlug } from "@/lib/data-cache";
@@ -8,7 +9,6 @@ import { MemberUser as IMember } from "@/types";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import BoardPageLoading from "./loading";
 
 interface PageProps {
   params: Promise<{ orgSlug: string; boardId: string }>;
@@ -32,23 +32,23 @@ export async function generateMetadata({
 }
 
 // 2. Main Page Server Component
-async function BoardPageInner({ params }: PageProps) {
-  const { orgSlug, boardId } = await params;
-
-  // Step 1: Resolve organization (cached)
-  const org = await getCachedOrgBySlug(orgSlug);
-  if (!org) notFound();
-
-  // Step 2: Validate access
-  const { role } = await validateOrgAccess(org.id, "viewer", org);
-  const canEdit = canEditCards(role);
-  const isAdmin = canManageOrg(role);
-
-  // Step 3: Fetch Board (cached) and Org Members in PARALLEL
+async function BoardPageInner({
+  orgId,
+  orgName,
+  boardId,
+  canEdit,
+  isAdmin,
+}: {
+  orgId: string;
+  orgName: string;
+  boardId: string;
+  canEdit: boolean;
+  isAdmin: boolean;
+}) {
   const [board, orgMembers] = await Promise.all([
-    getCachedBoard(boardId, org.id),
+    getCachedBoard(boardId, orgId),
     prisma.member.findMany({
-      where: { organizationId: org.id },
+      where: { organizationId: orgId },
       include: {
         user: {
           select: { id: true, name: true, email: true, image: true },
@@ -82,17 +82,30 @@ async function BoardPageInner({ params }: PageProps) {
       lists={lists}
       cards={cards}
       members={members}
-      orgName={org.name}
+      orgName={orgName}
       overdueCount={overdueCount}
       isAdmin={isAdmin}
     />
   );
 }
 
-export default function BoardPage({ params }: PageProps) {
+export default async function BoardPage({ params }: PageProps) {
+  const { orgSlug, boardId } = await params;
+
+  const org = await getCachedOrgBySlug(orgSlug);
+  if (!org) notFound();
+
+  const { role } = await validateOrgAccess(org.id, "viewer", org);
+
   return (
-    <Suspense fallback={<BoardPageLoading />}>
-      <BoardPageInner params={params} />
+    <Suspense fallback={<BoardPageFallback />}>
+      <BoardPageInner
+        orgId={org.id}
+        orgName={org.name}
+        boardId={boardId}
+        canEdit={canEditCards(role)}
+        isAdmin={canManageOrg(role)}
+      />
     </Suspense>
   );
 }
