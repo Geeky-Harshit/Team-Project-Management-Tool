@@ -6,8 +6,6 @@ import { Archive, ArrowLeft } from "lucide-react";
 import { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Suspense } from "react";
-import ArchivedBoardsLoading from "./loading";
 
 interface PageProps {
   params: Promise<{ orgSlug: string }>;
@@ -149,8 +147,6 @@ async function ArchivedBoardsPageInner({ params }: PageProps) {
 
 export default function ArchivedBoardsPage({ params }: PageProps) {
   return (
-    <Suspense fallback={<ArchivedBoardsLoading />}>
-      <ArchivedBoardsPageInner params={params} />
-    </Suspense>
+    <ArchivedBoardsPageInner params={params} />
   );
 }

@@ -7,7 +7,6 @@ import { getCachedOrgBySlug } from "@/lib/data-cache";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import OrgDashboardLoading from "./loading";
 
 export async function generateMetadata({
   params,
@@ -78,8 +77,6 @@ export default function OrgDashboardPage({
   params: Promise<{ orgSlug: string }>;
 }) {
   return (
-    <Suspense fallback={<OrgDashboardLoading />}>
-      <OrgDashboardPageInner params={params} />
-    </Suspense>
+    <OrgDashboardPageInner params={params} />
   );
 }

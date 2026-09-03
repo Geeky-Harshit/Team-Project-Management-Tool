@@ -7,7 +7,6 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import BoardsLoading from "./loading";
 
 interface PageProps {
   params: Promise<{ orgSlug: string }>;
@@ -95,8 +94,6 @@ async function BoardsPageInner({ params }: PageProps) {
 
 export default function BoardsPage({ params }: PageProps) {
   return (
-    <Suspense fallback={<BoardsLoading />}>
-      <BoardsPageInner params={params} />
-    </Suspense>
+    <BoardsPageInner params={params} />
   );
 }
