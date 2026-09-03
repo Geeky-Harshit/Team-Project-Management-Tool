@@ -38,7 +38,7 @@ async function OrgDashboardPageInner({
   await validateOrgAccess(org.id, "viewer", org);
 
   return (
-    <div className="flex flex-col gap-8 max-w-5xl mx-auto p-6 font-sans">
+    <div className="flex flex-col gap-8 font-sans">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">{org.name} Dashboard</h1>
         <p className="text-sm text-gray-500">
@@ -73,6 +73,25 @@ export default function OrgDashboardPage({
   params: Promise<{ orgSlug: string }>;
 }) {
   return (
-    <OrgDashboardPageInner params={params} />
+    <Suspense
+      fallback={
+        <div className="flex flex-col gap-8 font-sans">
+          <div>
+            <div className="h-8 w-64 animate-pulse rounded-lg bg-gray-200" />
+            <div className="mt-2 h-4 w-80 animate-pulse rounded bg-gray-100" />
+          </div>
+          <StatsFallback />
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+            <div className="flex flex-col gap-6">
+              <OverdueFallback />
+              <WorkloadFallback />
+            </div>
+            <ActivityFallback />
+          </div>
+        </div>
+      }
+    >
+      <OrgDashboardPageInner params={params} />
+    </Suspense>
   );
 }

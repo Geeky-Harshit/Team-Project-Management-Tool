@@ -1,6 +1,6 @@
 export function BoardPageFallback() {
   return (
-    <div className="mx-auto flex h-full w-full max-w-7xl flex-col gap-6 p-4 md:p-6 font-sans animate-pulse">
+    <div className="flex h-full w-full flex-col gap-6 font-sans animate-pulse">
       <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
         <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3">

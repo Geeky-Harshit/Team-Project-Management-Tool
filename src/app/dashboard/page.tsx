@@ -14,15 +14,15 @@ export const metadata: Metadata = {
   description: "Manage your organizations and workspaces",
 };
 
-async function DashboardPageInner({
-  userId,
-  userName,
-}: {
-  userId: string;
-  userName: string | null | undefined;
-}) {
+async function DashboardPageInner() {
+  const session = await getSession();
+
+  if (!session) {
+    redirect("/sign-in");
+  }
+
   const memberships = await prisma.member.findMany({
-    where: { userId },
+    where: { userId: session.user.id },
     include: {
       organization: true,
     },
@@ -39,11 +39,11 @@ async function DashboardPageInner({
   }));
 
   return (
-    <OrgProvider userId={userId} initialOrgs={initialOrgs}>
+    <OrgProvider userId={session.user.id} initialOrgs={initialOrgs}>
       <div className="flex min-h-screen flex-col bg-gray-50">
         <main className="container mx-auto max-w-5xl flex-1 p-6">
           <h1 className="mb-8 text-3xl font-bold text-gray-900">
-            Welcome, {userName}
+            Welcome, {session.user?.name}
           </h1>
 
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
@@ -56,19 +56,10 @@ async function DashboardPageInner({
   );
 }
 
-export default async function DashboardPage() {
-  const session = await getSession();
-
-  if (!session) {
-    redirect("/sign-in");
-  }
-
+export default function DashboardPage() {
   return (
-    <Suspense fallback={<DashboardPageFallback userName={session.user?.name} />}>
-      <DashboardPageInner
-        userId={session.user.id}
-        userName={session.user?.name}
-      />
+    <Suspense fallback={<DashboardPageFallback />}>
+      <DashboardPageInner />
     </Suspense>
   );
 }

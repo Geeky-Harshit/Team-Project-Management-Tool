@@ -32,19 +32,18 @@ export async function generateMetadata({
 }
 
 // 2. Main Page Server Component
-async function BoardPageInner({
-  orgId,
-  orgName,
-  boardId,
-  canEdit,
-  isAdmin,
-}: {
-  orgId: string;
-  orgName: string;
-  boardId: string;
-  canEdit: boolean;
-  isAdmin: boolean;
-}) {
+async function BoardPageInner({ params }: PageProps) {
+  const { orgSlug, boardId } = await params;
+
+  const org = await getCachedOrgBySlug(orgSlug);
+  if (!org) notFound();
+
+  const { role } = await validateOrgAccess(org.id, "viewer", org);
+  const canEdit = canEditCards(role);
+  const isAdmin = canManageOrg(role);
+  const orgId = org.id;
+  const orgName = org.name;
+
   const [board, orgMembers] = await Promise.all([
     getCachedBoard(boardId, orgId),
     prisma.member.findMany({
@@ -89,23 +88,10 @@ async function BoardPageInner({
   );
 }
 
-export default async function BoardPage({ params }: PageProps) {
-  const { orgSlug, boardId } = await params;
-
-  const org = await getCachedOrgBySlug(orgSlug);
-  if (!org) notFound();
-
-  const { role } = await validateOrgAccess(org.id, "viewer", org);
-
+export default function BoardPage({ params }: PageProps) {
   return (
     <Suspense fallback={<BoardPageFallback />}>
-      <BoardPageInner
-        orgId={org.id}
-        orgName={org.name}
-        boardId={boardId}
-        canEdit={canEditCards(role)}
-        isAdmin={canManageOrg(role)}
-      />
+      <BoardPageInner params={params} />
     </Suspense>
   );
 }

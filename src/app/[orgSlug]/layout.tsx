@@ -15,11 +15,12 @@ interface LayoutProps {
 
 async function OrgLayoutInner({
   children,
-  orgSlug,
+  params,
 }: {
   children: React.ReactNode;
-  orgSlug: string;
+  params: Promise<{ orgSlug: string }>;
 }) {
+  const { orgSlug } = await params;
   const session = await getSession();
 
   if (!session) {
@@ -55,7 +56,7 @@ async function OrgLayoutInner({
     >
       <div className="flex flex-col md:flex-row h-[calc(100vh-4rem)] bg-gray-50 overflow-hidden relative">
         <Sidebar orgName={org.name} orgSlug={orgSlug} />
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+        <main className="flex-1 overflow-y-auto p-4">
           {children}
         </main>
       </div>
@@ -63,12 +64,10 @@ async function OrgLayoutInner({
   );
 }
 
-export default async function OrgLayout({ children, params }: LayoutProps) {
-  const { orgSlug } = await params;
-
+export default function OrgLayout({ children, params }: LayoutProps) {
   return (
-    <Suspense fallback={<OrgLayoutFallback orgSlug={orgSlug} />}>
-      <OrgLayoutInner orgSlug={orgSlug}>{children}</OrgLayoutInner>
+    <Suspense fallback={<OrgLayoutFallback />}>
+      <OrgLayoutInner params={params}>{children}</OrgLayoutInner>
     </Suspense>
   );
 }

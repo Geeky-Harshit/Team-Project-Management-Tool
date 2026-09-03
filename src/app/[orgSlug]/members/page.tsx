@@ -26,15 +26,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-async function MembersPageInner({
-  orgId,
-  currentUserId,
-  isAdmin,
-}: {
-  orgId: string;
-  currentUserId: string;
-  isAdmin: boolean;
-}) {
+async function MembersPageInner({ params }: PageProps) {
+  const { orgSlug } = await params;
+
+  const org = await getCachedOrgBySlug(orgSlug);
+  if (!org) notFound();
+
+  const { user, role } = await validateOrgAccess(org.id, "viewer", org);
+  const isAdmin = canManageOrg(role);
+  const orgId = org.id;
+  const currentUserId = user.id;
+
   // Heavy DB queries run while Suspense shows the role-specific skeleton
   const [dbMembers, dbInvites] = await Promise.all([
     prisma.member.findMany({
@@ -90,23 +92,10 @@ async function MembersPageInner({
   );
 }
 
-export default async function MembersPage({ params }: PageProps) {
-  const { orgSlug } = await params;
-
-  const org = await getCachedOrgBySlug(orgSlug);
-  if (!org) notFound();
-
-  // Fast permission check (~1-3ms)
-  const { user, role } = await validateOrgAccess(org.id, "viewer", org);
-  const isAdmin = canManageOrg(role);
-
+export default function MembersPage({ params }: PageProps) {
   return (
-    <Suspense fallback={<MembersPageFallback isAdmin={isAdmin} />}>
-      <MembersPageInner
-        orgId={org.id}
-        currentUserId={user.id}
-        isAdmin={isAdmin}
-      />
+    <Suspense fallback={<MembersPageFallback />}>
+      <MembersPageInner params={params} />
     </Suspense>
   );
 }

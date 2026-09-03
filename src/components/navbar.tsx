@@ -14,7 +14,7 @@ export default function NavBar() {
   const { data: session } = useSession()
   return (
     <nav className="border-b border-gray-200 bg-white">
-      <div className="container mx-auto flex h-16 items-center px-4 justify-between">
+      <div className="flex h-16 w-full items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2 text-xl font-semibold text-primary">
           <Briefcase />
           TMT

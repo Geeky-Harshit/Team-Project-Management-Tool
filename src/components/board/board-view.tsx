@@ -27,7 +27,7 @@ export default function BoardView({
 }: BoardViewProps) {
   return (
     <OrgMembersProvider members={members}>
-      <div className="mx-auto flex h-full w-full max-w-7xl flex-col gap-6 p-4 md:p-6 font-sans">
+      <div className="flex h-full w-full flex-col gap-6 font-sans">
         {/* Stats Grid rendered on Server — never re-renders on search */}
         <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-4">
