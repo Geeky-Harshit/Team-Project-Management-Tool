@@ -72,7 +72,7 @@ export function SignInForm() {
               <div className="relative">
                 <Input
                   id="password"
-                  type={showPass?"password":"text"}
+                  type={showPass ? "text" : "password"}
                   placeholder="Password"
                   onChange={(e) => setPassword(e.target.value)}
                   value={password}
@@ -85,9 +85,9 @@ export function SignInForm() {
                   className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
                 >
                   {showPass ? (
-                    <EyeOff className="h-5 w-5" />
-                  ) : (
                     <Eye className="h-5 w-5" />
+                  ) : (
+                    <EyeOff className="h-5 w-5" />
                   )}
                 </button>
               </div>
