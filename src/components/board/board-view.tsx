@@ -27,23 +27,24 @@ export default function BoardView({
 }: BoardViewProps) {
   return (
     <OrgMembersProvider members={members}>
-      <div className="flex h-full min-h-0 w-full flex-col gap-6 font-sans">
+      <div className="flex h-full min-h-0 w-full flex-col gap-4 font-sans overflow-hidden">
+        {/* Compact stats row */}
         <div className="grid shrink-0 grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-xs">
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Lists</p>
-            <p className="mt-1.5 text-2xl font-bold tracking-tight text-gray-900">{lists.length}</p>
+          <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-xs">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-gray-500">Lists</p>
+            <p className="mt-1 text-xl font-bold tracking-tight text-gray-900">{lists.length}</p>
           </div>
-          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-xs">
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Tasks</p>
-            <p className="mt-1.5 text-2xl font-bold tracking-tight text-gray-900">{cards.length}</p>
+          <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-xs">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-gray-500">Tasks</p>
+            <p className="mt-1 text-xl font-bold tracking-tight text-gray-900">{cards.length}</p>
           </div>
-          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-xs">
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Overdue</p>
-            <p className="mt-1.5 text-2xl font-bold tracking-tight text-red-600">{overdueCount}</p>
+          <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-xs">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-gray-500">Overdue</p>
+            <p className="mt-1 text-xl font-bold tracking-tight text-red-600">{overdueCount}</p>
           </div>
-          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-xs">
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Organization</p>
-            <p className="mt-1.5 truncate text-sm font-semibold tracking-tight text-gray-900">{orgName}</p>
+          <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-xs">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-gray-500">Organization</p>
+            <p className="mt-1 truncate text-xs font-semibold tracking-tight text-gray-900">{orgName}</p>
           </div>
         </div>
 

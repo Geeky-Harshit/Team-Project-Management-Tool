@@ -101,7 +101,10 @@ export const AutoHideScrollbar = forwardRef<HTMLDivElement, AutoHideScrollbarPro
         <div
           ref={setContainerRef}
           onScroll={handleScroll}
-          className={cn("h-full overflow-y-auto scrollbar-none", contentClassName)}
+          className={cn(
+            "h-full min-h-0 max-h-[inherit] overflow-y-auto overscroll-y-contain scrollbar-none",
+            contentClassName,
+          )}
         >
           {children}
         </div>

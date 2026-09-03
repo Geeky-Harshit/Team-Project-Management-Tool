@@ -35,7 +35,7 @@ export function BoardClient({
   }, [cards, members]);
 
   return (
-    <>
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       <BoardHeader
         boardId={boardId}
         initialName={boardName}
@@ -47,7 +47,7 @@ export function BoardClient({
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
       />
-      <div className="mt-2 min-h-0 flex-1 rounded-xl border border-gray-200 bg-white p-5 shadow-xs sm:p-6">
+      <div className="mt-3 min-h-0 flex-1 flex flex-col rounded-xl border border-gray-200 bg-white p-4 shadow-xs overflow-hidden">
         <KanbanBoard
           initialLists={lists}
           initialCards={cards}
@@ -57,6 +57,6 @@ export function BoardClient({
           searchQuery={searchQuery}
         />
       </div>
-    </>
+    </div>
   );
 }

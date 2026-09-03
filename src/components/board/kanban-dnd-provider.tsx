@@ -275,7 +275,7 @@ export default function KanbanDndProvider({
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex flex-1 items-start gap-4 overflow-x-auto pb-4 pt-1 font-sans">
+      <div className="flex h-full min-h-0 flex-1 items-stretch gap-4 overflow-x-auto overflow-y-hidden pb-2 pt-1 font-sans">
         {sortedLists.map((list) => (
           <ListColumn
             key={list.id}

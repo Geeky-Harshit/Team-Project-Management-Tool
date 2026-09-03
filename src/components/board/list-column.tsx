@@ -43,7 +43,7 @@ function ListColumn({
       <div
         ref={dndEnabled ? droppable.setNodeRef : undefined}
         className={
-          "w-76 shrink-0 rounded-xl border bg-gray-50 p-3 transition " +
+          "w-76 shrink-0 rounded-xl border bg-gray-50 p-3 flex flex-col h-full max-h-full min-h-0 transition " +
           (dndEnabled && droppable.isOver
             ? "border-primary/60 ring-2 ring-primary/20"
             : "border-gray-200")
@@ -56,9 +56,12 @@ function ListColumn({
           cardsCount={cards.length}
           canEdit={canEdit}
         />
+
         <ScrollFade
-          maxHeight="max-h-[55vh]"
-          contentClassName="mt-3 p-1 flex flex-col min-h-24"
+          className="flex-1 min-h-0 h-full flex flex-col mt-2"
+          maxHeight="h-full"
+          contentClassName="p-1 flex flex-col min-h-24"
+          fadeColor="from-gray-50 via-gray-50/80 to-transparent"
         >
           {cards.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-6 px-3 text-center border border-dashed border-gray-300 rounded-xl bg-white/60 my-auto">
@@ -107,6 +110,7 @@ function ListColumn({
           )}
         </ScrollFade>
       </div>
+
       {canEdit && isAddCardOpen && (
         <CreateCardModal
           listId={list.id}
