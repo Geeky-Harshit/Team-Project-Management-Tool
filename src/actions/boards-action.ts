@@ -21,7 +21,7 @@ export async function createBoard(formData: FormData): Promise<BoardFormState> {
 
     const { user, org } = await validateOrgAccess(
       parsed.organizationId,
-      "member",
+      "admin",
     );
 
     const board = await prisma.board.create({

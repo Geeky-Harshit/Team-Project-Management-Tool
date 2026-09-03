@@ -78,7 +78,7 @@ export async function POST(
         { status: 404 },
       );
 
-    await requireRole(session.user.id, org.id, "member");
+    await requireRole(session.user.id, org.id, "admin");
 
     const board = await prisma.board.create({
       data: {

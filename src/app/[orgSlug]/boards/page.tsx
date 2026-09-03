@@ -1,6 +1,6 @@
 import { BoardsGridLive } from "@/components/board/boards-grid-live";
 import { BoardsGridFallback } from "@/components/fallbacks/boards/boards-grid-fallback";
-import { canEditCards, canManageOrg } from "@/lib/auth/permissions";
+import { canManageOrg } from "@/lib/auth/permissions";
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
 import { getCachedOrgBySlug } from "@/lib/data-cache";
 import { Archive } from "lucide-react";
@@ -34,7 +34,6 @@ async function BoardsPageInner({ params }: PageProps) {
 
   const { role } = await validateOrgAccess(org.id, "viewer", org);
   const canManage = canManageOrg(role);
-  const canCreate = canEditCards(role);
 
   return (
     <div className="flex w-full flex-col gap-6 font-sans">
@@ -64,7 +63,7 @@ async function BoardsPageInner({ params }: PageProps) {
         <BoardsGridLive
           orgId={org.id}
           orgSlug={orgSlug}
-          canCreate={canCreate}
+          canCreate={canManage}
         />
     </div>
   );
