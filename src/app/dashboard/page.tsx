@@ -1,28 +1,28 @@
+import OrganizationForm from "@/components/dashboard/organization-form";
+import OrganizationList from "@/components/dashboard/organization-list";
+import { DashboardPageFallback } from "@/components/fallbacks/dashboard/dashboard-page-fallback";
+import { OrgProvider } from "@/context/org-context";
 import { getSession } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
-import { OrgProvider } from "@/context/org-context";
-import OrganizationList from "@/components/dashboard/organization-list";
-import OrganizationForm from "@/components/dashboard/organization-form";
-import type { Metadata } from "next";
 import { Organization } from "@/types";
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import DashboardLoading from "./loading";
 
 export const metadata: Metadata = {
   title: "Dashboard",
   description: "Manage your organizations and workspaces",
 };
 
-async function DashboardPageInner() {
-  const session = await getSession();
-
-  if (!session) {
-    redirect("/sign-in");
-  }
-
+async function DashboardPageInner({
+  userId,
+  userName,
+}: {
+  userId: string;
+  userName: string | null | undefined;
+}) {
   const memberships = await prisma.member.findMany({
-    where: { userId: session.user.id },
+    where: { userId },
     include: {
       organization: true,
     },
@@ -39,14 +39,14 @@ async function DashboardPageInner() {
   }));
 
   return (
-    <OrgProvider userId={session.user.id} initialOrgs={initialOrgs}>
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <main className="flex-1 container mx-auto p-6 max-w-5xl">
-          <h1 className="text-3xl font-bold text-gray-900 mb-8">
-            Welcome, {session.user?.name}
+    <OrgProvider userId={userId} initialOrgs={initialOrgs}>
+      <div className="flex min-h-screen flex-col bg-gray-50">
+        <main className="container mx-auto max-w-5xl flex-1 p-6">
+          <h1 className="mb-8 text-3xl font-bold text-gray-900">
+            Welcome, {userName}
           </h1>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
             <OrganizationList />
             <OrganizationForm />
           </div>
@@ -56,10 +56,19 @@ async function DashboardPageInner() {
   );
 }
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const session = await getSession();
+
+  if (!session) {
+    redirect("/sign-in");
+  }
+
   return (
-    <Suspense fallback={<DashboardLoading />}>
-      <DashboardPageInner />
+    <Suspense fallback={<DashboardPageFallback userName={session.user?.name} />}>
+      <DashboardPageInner
+        userId={session.user.id}
+        userName={session.user?.name}
+      />
     </Suspense>
   );
 }
