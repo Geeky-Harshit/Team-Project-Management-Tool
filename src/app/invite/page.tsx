@@ -1,24 +1,16 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { useSession } from "@/lib/auth/auth-client";
-import { InviteCard } from "@/components/invite/invite-card";
 import { InviteError } from "@/components/invite/invite-error";
-import { Loader2 } from "lucide-react";
+import { InviteCard } from "@/components/invite/invite-card";
+import { InvitePageFallback } from "@/components/fallbacks/invite/invite-page-fallback";
+import { useSession } from "@/lib/auth/auth-client";
 import { Role } from "@/types";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 
 interface InviteLookupResponse {
   invite: { role: string | null };
   organization: { name: string; slug: string } | null;
-}
-
-function InvitePageFallback() {
-  return (
-    <div className="flex h-screen items-center justify-center bg-gray-50 font-sans">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-    </div>
-  );
 }
 
 function inviteSignInUrl(token: string) {
