@@ -8,7 +8,7 @@ interface StatsProps {
 
 export function DashboardStats({ boardsCount, tasksCount, overdueCount }: StatsProps) {
   return (
-    <div className="grid grid-cols-3 gap-2 font-sans">
+    <div className="grid grid-cols-3 gap-1.5 font-sans">
       <Card size="sm" className="flex-row items-center justify-between border-gray-200 px-3 py-2 shadow-sm">
         <CardTitle className="text-xs font-semibold text-gray-500">Active Boards</CardTitle>
         <span className="text-lg font-bold text-gray-900">{boardsCount}</span>

@@ -1,5 +1,6 @@
 "use client";
 
+import { AutoHideScrollbar } from "@/components/auto-hide-scrollbar";
 import { ChevronsDown, ChevronsUp } from "lucide-react";
 import { ReactNode, useEffect, useRef, useState } from "react";
 
@@ -46,13 +47,14 @@ export function ScrollFade({
         </div>
       )}
 
-      <div
+      <AutoHideScrollbar
         ref={ref}
+        className={`${maxHeight} h-full min-h-0`}
+        contentClassName={contentClassName}
         onScroll={checkScroll}
-        className={`overflow-y-auto pr-2 ${maxHeight} ${contentClassName}`}
       >
         {children}
-      </div>
+      </AutoHideScrollbar>
 
       {showBottom && (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex h-10 items-end justify-center bg-linear-to-t from-white via-white/80 to-transparent pb-1">

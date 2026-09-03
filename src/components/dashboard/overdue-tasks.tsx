@@ -11,11 +11,11 @@ export function OverdueTasksList({ tasks }: { tasks: Card[] }) {
       <ScrollFade
         className="h-full min-h-0 flex-1"
         maxHeight="h-full"
-        contentClassName="mt-0 p-1 flex flex-col"
+        contentClassName="mt-0 flex flex-col"
       >
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-2">
           {tasks.length === 0 ? (
-            <p className="text-xs text-gray-500">No overdue tasks. Nice work!</p>
+            <p className="text-[10px] text-gray-500">No overdue tasks. Nice work!</p>
           ) : (
             tasks.map((task) => (
               <div key={task.id} className="flex justify-between items-center text-xs py-2 border-b last:border-b-0">
