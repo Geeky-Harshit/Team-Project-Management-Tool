@@ -20,6 +20,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { useHydrated } from "@/hooks/useHydrated";
+import { arrayMove } from "@dnd-kit/sortable";
 import { useRouter } from "next/navigation";
 import {
   useCallback,
@@ -44,9 +45,25 @@ interface KanbanDndProviderProps {
   onOpenCard: (card: Card) => void;
 }
 
-function getInsertIndex(
-  overId: string,
+function sameListNeighbors<T extends { id: string }>(
+  originalList: T[],
   activeId: string,
+  overId: string,
+): { prev: T | null; next: T | null } | null {
+  const oldIndex = originalList.findIndex((card) => card.id === activeId);
+  const newIndex = originalList.findIndex((card) => card.id === overId);
+  if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return null;
+
+  const reordered = arrayMove(originalList, oldIndex, newIndex);
+  const index = reordered.findIndex((card) => card.id === activeId);
+  return {
+    prev: reordered[index - 1] ?? null,
+    next: reordered[index + 1] ?? null,
+  };
+}
+
+function crossListInsertIndex(
+  overId: string,
   isOverAColumn: boolean,
   siblings: { id: string }[],
   activeTop: number | null,
@@ -54,9 +71,7 @@ function getInsertIndex(
   overHeight: number | null,
   lastOverCardId: string | null,
   lastInsertIndex: number | null,
-): number | null {
-  if (overId === activeId) return null;
-
+): number {
   if (isOverAColumn) {
     if (
       lastOverCardId &&
@@ -239,6 +254,29 @@ export default function KanbanDndProvider({
     return null;
   };
 
+  const visibleInList = (source: Card[], listId: string) => {
+    const query = searchQuery.trim().toLowerCase();
+    return sortByPosition(
+      source.filter((card) => {
+        if (card.listId !== listId) return false;
+        if (selectedAssigneeId && card.assigneeId !== selectedAssigneeId) {
+          return false;
+        }
+        if (
+          query &&
+          !card.title.toLowerCase().includes(query) &&
+          !(card.description && card.description.toLowerCase().includes(query))
+        ) {
+          return false;
+        }
+        return true;
+      }),
+    );
+  };
+
+  const originalList = (listId: string) =>
+    visibleInList(preDragCards.current ?? cards, listId);
+
   const visibleSiblings = (listId: string, activeId: string) =>
     (cardsByListId.get(listId) ?? []).filter((card) => card.id !== activeId);
 
@@ -246,14 +284,12 @@ export default function KanbanDndProvider({
     sourceCards: Card[],
     activeId: string,
     targetListId: string,
-    siblings: Card[],
-    insertIndex: number,
+    prev: Card | null,
+    next: Card | null,
   ): { nextCards: Card[]; position: string } | null => {
     const currentCard = sourceCards.find((card) => card.id === activeId);
     if (!currentCard) return null;
 
-    const prev = siblings[insertIndex - 1] ?? null;
-    const next = siblings[insertIndex] ?? null;
     const position = generateKeyBetween(
       prev?.position ?? null,
       next?.position ?? null,
@@ -303,18 +339,42 @@ export default function KanbanDndProvider({
     }
 
     const siblings = visibleSiblings(target.targetListId, activeId);
-    const insertIndex = getInsertIndex(
-      overId,
-      activeId,
-      target.isOverAColumn,
-      siblings,
-      active.rect.current.translated?.top ?? null,
-      over.rect.top,
-      over.rect.height,
-      lastOverCardId.current,
-      lastInsertIndex.current,
-    );
-    if (insertIndex == null) return;
+    const startedInList = originalList(target.targetListId);
+    const startedInTarget = startedInList.some((card) => card.id === activeId);
+    const overCardId = target.isOverAColumn
+      ? lastOverCardId.current
+      : overId;
+
+    let prev: Card | null = null;
+    let next: Card | null = null;
+    let insertIndex: number | null = null;
+
+    if (startedInTarget) {
+      if (!overCardId) {
+        insertIndex = siblings.length;
+        prev = siblings[siblings.length - 1] ?? null;
+        next = null;
+      } else {
+        const neighbors = sameListNeighbors(startedInList, activeId, overCardId);
+        if (!neighbors) return;
+        prev = neighbors.prev;
+        next = neighbors.next;
+        insertIndex = startedInList.findIndex((card) => card.id === overCardId);
+      }
+    } else {
+      insertIndex = crossListInsertIndex(
+        overId,
+        target.isOverAColumn,
+        siblings,
+        active.rect.current.translated?.top ?? null,
+        over.rect.top,
+        over.rect.height,
+        lastOverCardId.current,
+        lastInsertIndex.current,
+      );
+      prev = siblings[insertIndex - 1] ?? null;
+      next = siblings[insertIndex] ?? null;
+    }
 
     if (
       lastOverListId.current === target.targetListId &&
@@ -330,8 +390,8 @@ export default function KanbanDndProvider({
       cards,
       activeId,
       target.targetListId,
-      siblings,
-      insertIndex,
+      prev,
+      next,
     );
     if (!placed) return;
 
@@ -395,27 +455,56 @@ export default function KanbanDndProvider({
     }
 
     const siblings = visibleSiblings(target.targetListId, activeId);
-    const insertIndex = getInsertIndex(
-      target.overId,
-      activeId,
-      target.isOverAColumn,
-      siblings,
-      active.rect.current.translated?.top ?? null,
-      over?.rect.top ?? null,
-      over?.rect.height ?? null,
-      lastOverCardId.current,
-      lastInsertIndex.current,
-    );
+    const startedInList = originalList(target.targetListId);
+    const startedInTarget = startedInList.some((card) => card.id === activeId);
+    const overCardId = target.isOverAColumn
+      ? lastOverCardId.current
+      : target.overId;
+
+    let prev: Card | null = null;
+    let next: Card | null = null;
+
+    if (startedInTarget) {
+      if (!overCardId) {
+        prev = siblings[siblings.length - 1] ?? null;
+        next = null;
+      } else {
+        const neighbors = sameListNeighbors(
+          startedInList,
+          activeId,
+          overCardId,
+        );
+        if (!neighbors) {
+          resetDropRefs();
+          preDragCards.current = null;
+          return;
+        }
+        prev = neighbors.prev;
+        next = neighbors.next;
+      }
+    } else {
+      const insertIndex = crossListInsertIndex(
+        target.overId,
+        target.isOverAColumn,
+        siblings,
+        active.rect.current.translated?.top ?? null,
+        over?.rect.top ?? null,
+        over?.rect.height ?? null,
+        lastOverCardId.current,
+        lastInsertIndex.current,
+      );
+      prev = siblings[insertIndex - 1] ?? null;
+      next = siblings[insertIndex] ?? null;
+    }
     resetDropRefs();
     preDragCards.current = null;
-    if (insertIndex == null) return;
 
     const placed = placeCard(
       cards,
       activeId,
       target.targetListId,
-      siblings,
-      insertIndex,
+      prev,
+      next,
     );
     if (!placed) return;
 

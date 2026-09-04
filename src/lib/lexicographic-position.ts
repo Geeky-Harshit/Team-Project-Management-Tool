@@ -31,7 +31,8 @@ export function generateKeyBetween(
     throw new Error(`Invalid rank: ${b}`);
   }
   if (a !== null && b !== null && a >= b) {
-    throw new Error(`Invalid range: "${a}" >= "${b}"`);
+    if (a === b) return incrementKey(a);
+    return generateKeyBetween(b, a);
   }
 
   if (a === null && b === null) return "a0";
