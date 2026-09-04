@@ -11,7 +11,7 @@ export interface List {
   id: string;
   boardId: string;
   name: string;
-  position: number;
+  position: string;
   archived: boolean;
   createdAt: string;
   updatedAt: string;

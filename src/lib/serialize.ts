@@ -7,7 +7,7 @@ export function toCard(row: {
   description: string | null;
   assigneeId: string | null;
   dueDate: Date | string | null;
-  position: number;
+  position: string;
   archived: boolean;
   createdBy: string;
   createdAt: Date | string;
@@ -32,7 +32,7 @@ export function toList(row: {
   id: string;
   boardId: string;
   name: string;
-  position: number;
+  position: string;
   archived: boolean;
   createdAt: Date | string;
   updatedAt: Date | string;

@@ -2,6 +2,7 @@
 
 import { logActivity } from "@/lib/activity-logger";
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
+import { generateKeyBetween } from "@/lib/lexicographic-position";
 import { prisma } from "@/lib/prisma";
 import {
   createListSchema,
@@ -29,11 +30,12 @@ export async function createList(
     });
     if (!board) throw new Error("Board access denied");
 
-    const maxPositionList = await prisma.list.findFirst({
+    const lastList = await prisma.list.findFirst({
       where: { boardId: parsed.boardId },
       orderBy: { position: "desc" },
+      select: { position: true },
     });
-    const position = maxPositionList ? maxPositionList.position + 1000 : 1000;
+    const position = generateKeyBetween(lastList?.position ?? null, null);
 
     await prisma.list.create({
       data: {

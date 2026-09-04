@@ -5,7 +5,7 @@ export interface Card {
   description: string;
   assigneeId: string | null;
   dueDate: string | null;
-  position: number;
+  position: string;
   archived: boolean;
   createdBy: string;
   createdAt: string;

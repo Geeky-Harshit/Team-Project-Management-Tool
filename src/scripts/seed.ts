@@ -1,7 +1,11 @@
 import "dotenv/config";
 import { faker } from "@faker-js/faker";
-import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth/auth";
+import {
+  generateKeyBetween,
+  generateNKeysBetween,
+} from "@/lib/lexicographic-position";
+import { prisma } from "@/lib/prisma";
 
 const DEFAULT_PASSWORD = "Password@123";
 
@@ -106,12 +110,13 @@ async function seed() {
   const columnTitles = ["To Do", "In Progress", "Code Review", "Done"];
 
   for (const board of boards) {
+    const listPositions = generateNKeysBetween(null, null, columnTitles.length);
     for (let idx = 0; idx < columnTitles.length; idx++) {
       const list = await prisma.list.create({
         data: {
           boardId: board.id,
           name: columnTitles[idx],
-          position: (idx + 1) * 1000,
+          position: listPositions[idx]!,
         },
       });
       lists.push(list);
@@ -121,8 +126,14 @@ async function seed() {
 
   // 5. Create Cards
   console.log("🃏 Creating 200+ cards...");
+  const lastCardPositionByList = new Map<string, string>();
   for (let i = 0; i < 220; i++) {
     const list = faker.helpers.arrayElement(lists);
+    const position = generateKeyBetween(
+      lastCardPositionByList.get(list.id) ?? null,
+      null,
+    );
+    lastCardPositionByList.set(list.id, position);
     await prisma.card.create({
       data: {
         listId: list.id,
@@ -130,7 +141,7 @@ async function seed() {
         description: faker.lorem.paragraph(),
         assigneeId: faker.helpers.arrayElement(users).id,
         dueDate: faker.date.between({ from: "2026-08-01", to: "2026-08-30" }),
-        position: (i + 1) * 1000,
+        position,
         createdBy: users[0].id,
       },
     });

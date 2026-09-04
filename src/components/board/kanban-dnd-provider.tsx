@@ -1,5 +1,6 @@
 "use client";
 
+import { generateKeyBetween, sortByPosition } from "@/lib/lexicographic-position";
 import { showActivityToast } from "@/lib/show-activity-toast";
 import { Card, List } from "@/types";
 import {
@@ -30,9 +31,6 @@ interface KanbanDndProviderProps {
   searchQuery?: string;
   onOpenCard: (card: Card) => void;
 }
-
-const sortByPosition = <T extends { position: number }>(items: T[]): T[] =>
-  [...items].sort((a, b) => a.position - b.position);
 
 export default function KanbanDndProvider({
   initialLists,
@@ -207,8 +205,10 @@ export default function KanbanDndProvider({
 
     if (!targetListId) return;
 
-    const targetListCards = optimisticCards.filter(
-      (c) => c.listId === targetListId && c.id !== activeId,
+    const targetListCards = sortByPosition(
+      optimisticCards.filter(
+        (c) => c.listId === targetListId && c.id !== activeId,
+      ),
     );
 
     let newIndex = targetListCards.length;
@@ -217,53 +217,44 @@ export default function KanbanDndProvider({
       if (overIndex !== -1) newIndex = overIndex;
     }
 
-    const reorderedTarget = [...targetListCards];
-    reorderedTarget.splice(newIndex, 0, currentCard);
+    const prev = targetListCards[newIndex - 1] ?? null;
+    const next = targetListCards[newIndex] ?? null;
+    const position = generateKeyBetween(
+      prev?.position ?? null,
+      next?.position ?? null,
+    );
 
-    const reorderedWithPositions = reorderedTarget.map((c, i) => ({
-      ...c,
+    if (currentCard.listId === targetListId && currentCard.position === position) {
+      return;
+    }
+
+    const movedCard = {
+      ...currentCard,
       listId: targetListId,
-      position: (i + 1) * 1000,
-    }));
+      position,
+    };
 
     const snapshot = preDragCards.current;
     preDragCards.current = null;
 
-    const nextCards = [
-      ...optimisticCards.filter(
-        (c) => c.listId !== targetListId && c.id !== activeId,
-      ),
-      ...reorderedWithPositions,
-    ];
+    const nextCards = optimisticCards.map((c) =>
+      c.id === activeId ? movedCard : c,
+    );
 
-    if (activeDragCard && activeDragCard.listId !== targetListId) {
-      const sourceListCards = optimisticCards
-        .filter((c) => c.listId === activeDragCard.listId && c.id !== activeId)
-        .sort((a, b) => a.position - b.position);
+    const didMoveLists = Boolean(
+      activeDragCard && activeDragCard.listId !== targetListId,
+    );
 
-      patchCards(
-        {
-          cardId: activeId,
-          sourceListId: activeDragCard.listId,
-          targetListId,
-          sourceCardIds: sourceListCards.map((c) => c.id),
-          targetCardIds: reorderedWithPositions.map((c) => c.id),
-        },
-        nextCards,
-        snapshot,
-        "Failed to move card",
-      );
-    } else {
-      patchCards(
-        {
-          listId: targetListId,
-          cardIds: reorderedWithPositions.map((c) => c.id),
-        },
-        nextCards,
-        snapshot,
-        "Failed to save card order",
-      );
-    }
+    patchCards(
+      {
+        cardId: activeId,
+        listId: targetListId,
+        position,
+      },
+      nextCards,
+      snapshot,
+      didMoveLists ? "Failed to move card" : "Failed to save card order",
+    );
   };
 
   return (

@@ -2,6 +2,7 @@
 
 import { logActivity } from "@/lib/activity-logger";
 import { validateOrgAccess } from "@/lib/auth/server-permissions";
+import { generateKeyBetween } from "@/lib/lexicographic-position";
 import { prisma } from "@/lib/prisma";
 import { toComment } from "@/lib/serialize";
 import {
@@ -33,11 +34,12 @@ export async function createCard(formData: FormData) {
   });
   if (!board) throw new Error("Board access denied");
 
-  const maxPositionCard = await prisma.card.findFirst({
+  const lastCard = await prisma.card.findFirst({
     where: { listId: parsed.listId },
     orderBy: { position: "desc" },
+    select: { position: true },
   });
-  const position = maxPositionCard ? maxPositionCard.position + 1000 : 1000;
+  const position = generateKeyBetween(lastCard?.position ?? null, null);
 
   const card = await prisma.card.create({
     data: {

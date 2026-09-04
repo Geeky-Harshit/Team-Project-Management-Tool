@@ -40,12 +40,12 @@ export const updateCardDetailsSchema = z.object({
 
 export const updateCardsPatchSchema = z.object({
   cardId: z.string().min(1).optional(),
-  targetListId: z.string().min(1).optional(),
-  targetCardIds: z.array(z.string().min(1)).optional(),
-  sourceListId: z.string().min(1).optional(),
-  sourceCardIds: z.array(z.string().min(1)).optional(),
-  cardIds: z.array(z.string().min(1)).optional(),
   listId: z.string().min(1).optional(),
+  position: z
+    .string()
+    .min(1)
+    .regex(/^[0-9a-z]+$/, "Invalid card position")
+    .optional(),
   title: z.string().trim().min(1).max(200).optional(),
   description: z.string().max(5000).optional(),
   assigneeId: z.string().min(1).nullable().optional(),

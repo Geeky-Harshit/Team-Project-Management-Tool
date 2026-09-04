@@ -1,6 +1,6 @@
-import { Prisma } from "@/generated/prisma/client";
 import { logActivity } from "@/lib/activity-logger";
 import { validateBoardAccess } from "@/lib/auth/board-access";
+import { generateKeyBetween } from "@/lib/lexicographic-position";
 import { prisma } from "@/lib/prisma";
 import { createCardApiSchema, updateCardsPatchSchema } from "@/lib/validations";
 import { Board, Role } from "@/types";
@@ -75,20 +75,6 @@ async function assertCardsOnBoard(boardId: string, cardIds: string[]) {
   return count === unique.length;
 }
 
-function sqlWhenThen(ids: string[], value: string | number) {
-  return Prisma.join(
-    ids.map((id) => Prisma.sql`WHEN ${id} THEN ${value}`),
-    " ",
-  );
-}
-
-function sqlPositionCases(ids: string[]) {
-  return Prisma.join(
-    ids.map((id, idx) => Prisma.sql`WHEN ${id} THEN ${(idx + 1) * 1000}`),
-    " ",
-  );
-}
-
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -127,11 +113,12 @@ export async function POST(
     });
     if (!list) return jsonError("Invalid list for this board", 400);
 
-    const maxPositionCard = await prisma.card.findFirst({
+    const lastCard = await prisma.card.findFirst({
       where: { listId: parsed.listId },
       orderBy: { position: "desc" },
+      select: { position: true },
     });
-    const position = maxPositionCard ? maxPositionCard.position + 1000 : 1000;
+    const position = generateKeyBetween(lastCard?.position ?? null, null);
 
     const card = await prisma.card.create({
       data: {
@@ -172,99 +159,45 @@ export async function PATCH(
     const body = await request.json();
     const payload = updateCardsPatchSchema.parse(body);
 
-    // 1) Move across lists — one UPDATE
-    if (
-      payload.cardId &&
-      payload.targetListId &&
-      payload.sourceListId &&
-      Array.isArray(payload.targetCardIds) &&
-      Array.isArray(payload.sourceCardIds)
-    ) {
-      const listsOk = await assertListsOnBoard(board.id, [
-        payload.sourceListId,
-        payload.targetListId,
-      ]);
-      if (!listsOk) return jsonError("Invalid list for this board", 400);
-
-      const allIds = [
-        ...new Set([...payload.targetCardIds, ...payload.sourceCardIds]),
-      ];
-      if (!(await assertCardsOnBoard(board.id, allIds))) {
-        return jsonError("Invalid cards for this board", 400);
-      }
-
-      const listIdCases: Prisma.Sql[] = [];
-      if (payload.targetCardIds.length > 0) {
-        listIdCases.push(
-          sqlWhenThen(payload.targetCardIds, payload.targetListId),
-        );
-      }
-      if (payload.sourceCardIds.length > 0) {
-        listIdCases.push(
-          sqlWhenThen(payload.sourceCardIds, payload.sourceListId),
-        );
-      }
-
-      const positionCases: Prisma.Sql[] = [];
-      if (payload.targetCardIds.length > 0) {
-        positionCases.push(sqlPositionCases(payload.targetCardIds));
-      }
-      if (payload.sourceCardIds.length > 0) {
-        positionCases.push(sqlPositionCases(payload.sourceCardIds));
-      }
-
-      if (listIdCases.length > 0 && positionCases.length > 0) {
-        await prisma.$executeRaw`
-          UPDATE "card"
-          SET
-            "listId" = CASE "id" ${Prisma.join(listIdCases, " ")} ELSE "listId" END,
-            "position" = CASE "id" ${Prisma.join(positionCases, " ")} ELSE "position" END,
-            "updatedAt" = NOW()
-          WHERE "id" IN (${Prisma.join(allIds)})
-        `;
-      }
-
-      await logActivity({
-        organizationId: board.organizationId,
-        boardId: board.id,
-        cardId: payload.cardId,
-        actorId: userId,
-        type: "CARD_MOVED",
-        message: "moved card to another list",
-      });
-
-      invalidateBoardCache(board);
-      return NextResponse.json({ success: true });
-    }
-
-    // 2) Reorder inside one list — one UPDATE
-    if (
-      Array.isArray(payload.cardIds) &&
-      payload.cardIds.length > 0 &&
-      payload.listId &&
-      !payload.cardId
-    ) {
+    // 1) Move or reorder — update only the dragged card
+    if (payload.cardId && payload.listId && payload.position) {
       const listOk = await assertListsOnBoard(board.id, [payload.listId]);
       if (!listOk) return jsonError("Invalid list for this board", 400);
 
-      if (!(await assertCardsOnBoard(board.id, payload.cardIds))) {
+      if (!(await assertCardsOnBoard(board.id, [payload.cardId]))) {
         return jsonError("Invalid cards for this board", 400);
       }
 
-      await prisma.$executeRaw`
-        UPDATE "card"
-        SET
-          "position" = CASE "id" ${sqlPositionCases(payload.cardIds)} ELSE "position" END,
-          "updatedAt" = NOW()
-        WHERE "id" IN (${Prisma.join(payload.cardIds)})
-          AND "listId" = ${payload.listId}
-      `;
+      const existing = await prisma.card.findUnique({
+        where: { id: payload.cardId },
+        select: { listId: true },
+      });
+      if (!existing) return jsonError("Card not found", 404);
+
+      await prisma.card.update({
+        where: { id: payload.cardId },
+        data: {
+          listId: payload.listId,
+          position: payload.position,
+        },
+      });
+
+      if (existing.listId !== payload.listId) {
+        await logActivity({
+          organizationId: board.organizationId,
+          boardId: board.id,
+          cardId: payload.cardId,
+          actorId: userId,
+          type: "CARD_MOVED",
+          message: "moved card to another list",
+        });
+      }
 
       invalidateBoardCache(board);
       return NextResponse.json({ success: true });
     }
 
-    // 3) Single card details — scoped to this board
+    // 2) Single card details — scoped to this board
     if (payload.cardId) {
       const updates: {
         title?: string;
