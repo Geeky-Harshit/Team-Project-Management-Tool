@@ -6,17 +6,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useSession } from "@/lib/auth/auth-client";
 import { Search } from "lucide-react";
 
 interface MemberFilterBarProps {
@@ -34,19 +29,19 @@ export default function MemberFilterBar({
   searchQuery = "",
   onSearchChange,
 }: MemberFilterBarProps) {
-  const sortedMembers = useMemo(() => {
-    if (!selectedAssigneeId) return members;
-    return [...members].sort((a, b) => {
-      if (a.id === selectedAssigneeId) return -1;
-      if (b.id === selectedAssigneeId) return 1;
-      return 0;
-    });
-  }, [members, selectedAssigneeId]);
+  const { data: session } = useSession();
+  const currentUserId = session?.user?.id;
 
-  const maxVisibleAvatars = 4;
-  const visibleMembers = sortedMembers.slice(0, maxVisibleAvatars);
-  const overflowMembers = sortedMembers.slice(maxVisibleAvatars);
-  const overflowCount = overflowMembers.length;
+  // Current user first (only present if they have a task on this board), then everyone else.
+  const sortedMembers = useMemo(() => {
+    return [...members].sort((a, b) => {
+      if (currentUserId) {
+        if (a.id === currentUserId) return -1;
+        if (b.id === currentUserId) return 1;
+      }
+      return a.name.localeCompare(b.name);
+    });
+  }, [members, currentUserId]);
 
   return (
     <TooltipProvider>
@@ -63,76 +58,57 @@ export default function MemberFilterBar({
 
         {sortedMembers.length > 0 && (
           <div className="flex items-center gap-1">
-            <div className="flex items-center -space-x-2">
-              {visibleMembers.map((member) => {
+            <div className="flex items-center">
+              {sortedMembers.map((member, index) => {
+                const isSelf = member.id === currentUserId;
                 const isSelected = selectedAssigneeId === member.id;
-                return (
-                  <Tooltip key={member.id}>
-                    <TooltipTrigger
-                      type="button"
-                      onClick={() =>
-                        onSelectAssignee?.(isSelected ? null : member.id)
-                      }
-                      className={`relative rounded-full transition-all focus:outline-none ${isSelected
-                          ? "z-20 scale-105 ring-2 ring-primary ring-offset-2"
-                          : "hover:z-10 hover:scale-105"
-                        }`}
-                    >
-                      <Avatar className="h-8 w-8 border-2 border-white shadow-xs">
-                        <AvatarImage
-                          src={member.image || undefined}
-                          alt={member.name}
-                        />
-                        <AvatarFallback className="bg-primary/15 text-[11px] font-bold text-primary">
-                          {member.name
-                            ? member.name.slice(0, 2).toUpperCase()
-                            : "U"}
-                        </AvatarFallback>
-                      </Avatar>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="text-xs">
-                      {member.name}
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              })}
+                const showDivider =
+                  isSelf && index === 0 && sortedMembers.length > 1;
+                const overlapPrevious =
+                  index > 0 &&
+                  !(index === 1 && sortedMembers[0]?.id === currentUserId);
 
-              {overflowCount > 0 && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-2 border-white bg-gray-100 text-[11px] font-medium text-gray-600 shadow-xs hover:scale-105 hover:bg-gray-200 focus:outline-none">
-                    +{overflowCount}
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-48 p-1">
-                    {overflowMembers.map((member) => (
-                      <DropdownMenuItem
-                        key={member.id}
+                return (
+                  <div key={member.id} className="flex items-center">
+                    <Tooltip>
+                      <TooltipTrigger
+                        type="button"
                         onClick={() =>
-                          onSelectAssignee?.(
-                            selectedAssigneeId === member.id ? null : member.id
-                          )
+                          onSelectAssignee?.(isSelected ? null : member.id)
                         }
-                        className={`flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-xs ${selectedAssigneeId === member.id
-                            ? "bg-primary/10 font-semibold text-primary"
-                            : ""
-                          }`}
+                        className={`relative rounded-full transition-all focus:outline-none ${
+                          overlapPrevious ? "-ml-2" : ""
+                        } ${
+                          isSelected
+                            ? "z-20 scale-105 ring-2 ring-primary ring-offset-2"
+                            : "hover:z-10 hover:scale-105"
+                        }`}
                       >
-                        <Avatar className="h-6 w-6">
+                        <Avatar className="h-8 w-8 border-2 border-white shadow-xs">
                           <AvatarImage
                             src={member.image || undefined}
                             alt={member.name}
                           />
-                          <AvatarFallback className="bg-primary/15 text-[10px] font-bold text-primary">
+                          <AvatarFallback className="bg-primary/15 text-[11px] font-bold text-primary">
                             {member.name
                               ? member.name.slice(0, 2).toUpperCase()
                               : "U"}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="truncate">{member.name}</span>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="text-xs">
+                        {isSelf ? `${member.name} (You)` : member.name}
+                      </TooltipContent>
+                    </Tooltip>
+                    {showDivider && (
+                      <span
+                        className="mx-1.5 h-5 w-px shrink-0 bg-gray-300"
+                        aria-hidden
+                      />
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             {selectedAssigneeId && (
