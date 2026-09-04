@@ -49,7 +49,7 @@ export default function MemberFilterBar({
         <div className="relative w-48 sm:w-64">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
-            placeholder="Search board"
+            placeholder="Search for a task"
             value={searchQuery}
             onChange={(e) => onSearchChange?.(e.target.value)}
             className="pl-9 h-8 text-xs bg-gray-50/50 border-gray-300 focus-visible:ring-primary focus-visible:bg-white"
