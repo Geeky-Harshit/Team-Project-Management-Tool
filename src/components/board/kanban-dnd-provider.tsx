@@ -1,22 +1,34 @@
 "use client";
 
-import { generateKeyBetween, sortByPosition } from "@/lib/lexicographic-position";
+import {
+  generateKeyBetween,
+  sortByPosition,
+} from "@/lib/lexicographic-position";
 import { showActivityToast } from "@/lib/show-activity-toast";
 import { Card, List } from "@/types";
 import {
+  CollisionDetection,
   DndContext,
   DragEndEvent,
   DragOverEvent,
   DragOverlay,
   DragStartEvent,
   PointerSensor,
-  closestCorners,
+  pointerWithin,
+  rectIntersection,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useRouter } from "next/navigation";
-import { useMemo, useOptimistic, useRef, useState, useTransition } from "react";
+import {
+  useCallback,
+  useMemo,
+  useOptimistic,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { toast } from "sonner";
 import CardItem from "./card-item";
 import ListColumn from "./list-column";
@@ -30,6 +42,42 @@ interface KanbanDndProviderProps {
   selectedAssigneeId?: string | null;
   searchQuery?: string;
   onOpenCard: (card: Card) => void;
+}
+
+function getInsertIndex(
+  overId: string,
+  activeId: string,
+  isOverAColumn: boolean,
+  siblings: { id: string }[],
+  activeTop: number | null,
+  overTop: number | null,
+  overHeight: number | null,
+  lastOverCardId: string | null,
+  lastInsertIndex: number | null,
+): number | null {
+  if (overId === activeId) return null;
+
+  if (isOverAColumn) {
+    if (
+      lastOverCardId &&
+      lastInsertIndex != null &&
+      siblings.some((card) => card.id === lastOverCardId)
+    ) {
+      return lastInsertIndex;
+    }
+    return siblings.length;
+  }
+
+  const overIndex = siblings.findIndex((card) => card.id === overId);
+  if (overIndex === -1) return siblings.length;
+
+  const isBelow =
+    activeTop != null &&
+    overTop != null &&
+    overHeight != null &&
+    activeTop > overTop + overHeight / 2;
+
+  return isBelow ? overIndex + 1 : overIndex;
 }
 
 export default function KanbanDndProvider({
@@ -48,6 +96,8 @@ export default function KanbanDndProvider({
   const [activeDragCard, setActiveDragCard] = useState<Card | null>(null);
   const [dragRotation, setDragRotation] = useState(0);
   const lastOverListId = useRef<string | null>(null);
+  const lastOverCardId = useRef<string | null>(null);
+  const lastInsertIndex = useRef<number | null>(null);
   const preDragCards = useRef<Card[] | null>(null);
 
   const [optimisticCards, applyOptimistic] = useOptimistic(
@@ -64,6 +114,27 @@ export default function KanbanDndProvider({
   const sortedLists = useMemo(
     () => sortByPosition(initialLists),
     [initialLists],
+  );
+
+  const listIdSet = useMemo(
+    () => new Set(sortedLists.map((list) => list.id)),
+    [sortedLists],
+  );
+
+  const collisionDetection: CollisionDetection = useCallback(
+    (args) => {
+      const pointerHits = pointerWithin(args);
+      const hits = pointerHits.length > 0 ? pointerHits : rectIntersection(args);
+
+      const cardHit = hits.find((hit) => !listIdSet.has(String(hit.id)));
+      if (cardHit) return [cardHit];
+
+      const listHit = hits.find((hit) => listIdSet.has(String(hit.id)));
+      if (listHit) return [listHit];
+
+      return hits;
+    },
+    [listIdSet],
   );
 
   const cardsByListId = useMemo(() => {
@@ -95,11 +166,10 @@ export default function KanbanDndProvider({
     return map;
   }, [optimisticCards, sortedLists, selectedAssigneeId, searchQuery]);
 
-  const previewCards = (next: Card[]) => {
-    startTransition(() => {
-      applyOptimistic(next);
-      setCards(next);
-    });
+  const resetDropRefs = () => {
+    lastOverListId.current = null;
+    lastOverCardId.current = null;
+    lastInsertIndex.current = null;
   };
 
   const rollback = (snapshot: Card[] | null, message: string) => {
@@ -147,12 +217,66 @@ export default function KanbanDndProvider({
     });
   };
 
+  const resolveDropTarget = (
+    overId: string | null,
+    sourceCards: Card[],
+  ): { targetListId: string; isOverAColumn: boolean; overId: string } | null => {
+    if (overId) {
+      const isOverAColumn = listIdSet.has(overId);
+      const overCard = sourceCards.find((card) => card.id === overId);
+      const targetListId = isOverAColumn ? overId : overCard?.listId;
+      if (targetListId) return { targetListId, isOverAColumn, overId };
+    }
+
+    if (lastOverListId.current) {
+      return {
+        targetListId: lastOverListId.current,
+        isOverAColumn: true,
+        overId: lastOverListId.current,
+      };
+    }
+
+    return null;
+  };
+
+  const visibleSiblings = (listId: string, activeId: string) =>
+    (cardsByListId.get(listId) ?? []).filter((card) => card.id !== activeId);
+
+  const placeCard = (
+    sourceCards: Card[],
+    activeId: string,
+    targetListId: string,
+    siblings: Card[],
+    insertIndex: number,
+  ): { nextCards: Card[]; position: string } | null => {
+    const currentCard = sourceCards.find((card) => card.id === activeId);
+    if (!currentCard) return null;
+
+    const prev = siblings[insertIndex - 1] ?? null;
+    const next = siblings[insertIndex] ?? null;
+    const position = generateKeyBetween(
+      prev?.position ?? null,
+      next?.position ?? null,
+    );
+
+    return {
+      position,
+      nextCards: sourceCards.map((card) =>
+        card.id === activeId
+          ? { ...card, listId: targetListId, position }
+          : card,
+      ),
+    };
+  };
+
   const handleDragStart = (event: DragStartEvent) => {
     if (!canEdit) return;
     const { active } = event;
-    const card = optimisticCards.find((c) => c.id === active.id) || null;
+    const card = cards.find((item) => item.id === active.id) || null;
     setActiveDragCard(card);
     lastOverListId.current = card?.listId ?? null;
+    lastOverCardId.current = null;
+    lastInsertIndex.current = null;
     preDragCards.current = cards;
     setDragRotation((Math.random() - 0.5) * 6);
   };
@@ -162,96 +286,158 @@ export default function KanbanDndProvider({
     const { active, over } = event;
     if (!over) return;
 
-    const activeId = active.id as string;
-    const overId = over.id as string;
-    if (activeId === overId) return;
+    const activeId = String(active.id);
+    const overId = String(over.id);
+    if (overId === activeId) return;
 
-    const activeCard = optimisticCards.find((c) => c.id === activeId);
-    if (!activeCard) return;
+    const target = resolveDropTarget(overId, cards);
+    if (!target) return;
 
-    const isOverAColumn = sortedLists.some((l) => l.id === overId);
-    const overCard = optimisticCards.find((c) => c.id === overId);
-    const overListId = isOverAColumn ? overId : overCard?.listId;
-    if (!overListId || activeCard.listId === overListId) return;
-    if (lastOverListId.current === overListId) return;
+    if (lastOverListId.current !== target.targetListId) {
+      lastOverCardId.current = null;
+      lastInsertIndex.current = null;
+    }
 
-    lastOverListId.current = overListId;
-    previewCards(
-      optimisticCards.map((c) =>
-        c.id === activeId ? { ...c, listId: overListId } : c,
-      ),
+    if (!target.isOverAColumn) {
+      lastOverCardId.current = overId;
+    }
+
+    const siblings = visibleSiblings(target.targetListId, activeId);
+    const insertIndex = getInsertIndex(
+      overId,
+      activeId,
+      target.isOverAColumn,
+      siblings,
+      active.rect.current.translated?.top ?? null,
+      over.rect.top,
+      over.rect.height,
+      lastOverCardId.current,
+      lastInsertIndex.current,
     );
+    if (insertIndex == null) return;
+
+    if (
+      lastOverListId.current === target.targetListId &&
+      lastInsertIndex.current === insertIndex
+    ) {
+      return;
+    }
+
+    lastOverListId.current = target.targetListId;
+    lastInsertIndex.current = insertIndex;
+
+    const placed = placeCard(
+      cards,
+      activeId,
+      target.targetListId,
+      siblings,
+      insertIndex,
+    );
+    if (!placed) return;
+
+    const currentCard = cards.find((card) => card.id === activeId);
+    if (
+      currentCard?.listId === target.targetListId &&
+      currentCard.position === placed.position
+    ) {
+      return;
+    }
+
+    setCards(placed.nextCards);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    lastOverListId.current = null;
     if (!canEdit) {
       setActiveDragCard(null);
+      resetDropRefs();
       return;
     }
+
     const { active, over } = event;
     setActiveDragCard(null);
-    if (!over) return;
 
-    const activeId = active.id as string;
-    const overId = over.id as string;
-    const currentCard = optimisticCards.find((c) => c.id === activeId);
-    if (!currentCard) return;
-
-    const isOverAColumn = sortedLists.some((l) => l.id === overId);
-    const targetListId = isOverAColumn
-      ? overId
-      : optimisticCards.find((c) => c.id === overId)?.listId;
-
-    if (!targetListId) return;
-
-    const targetListCards = sortByPosition(
-      optimisticCards.filter(
-        (c) => c.listId === targetListId && c.id !== activeId,
-      ),
-    );
-
-    let newIndex = targetListCards.length;
-    if (!isOverAColumn) {
-      const overIndex = targetListCards.findIndex((c) => c.id === overId);
-      if (overIndex !== -1) newIndex = overIndex;
-    }
-
-    const prev = targetListCards[newIndex - 1] ?? null;
-    const next = targetListCards[newIndex] ?? null;
-    const position = generateKeyBetween(
-      prev?.position ?? null,
-      next?.position ?? null,
-    );
-
-    if (currentCard.listId === targetListId && currentCard.position === position) {
+    const activeId = String(active.id);
+    const target = resolveDropTarget(over ? String(over.id) : null, cards);
+    if (!target) {
+      resetDropRefs();
       return;
     }
 
-    const movedCard = {
-      ...currentCard,
-      listId: targetListId,
-      position,
-    };
-
     const snapshot = preDragCards.current;
-    preDragCards.current = null;
+    const original = snapshot?.find((card) => card.id === activeId);
 
-    const nextCards = optimisticCards.map((c) =>
-      c.id === activeId ? movedCard : c,
+    if (target.overId === activeId) {
+      resetDropRefs();
+      preDragCards.current = null;
+      const currentCard = cards.find((card) => card.id === activeId);
+      if (
+        !currentCard ||
+        (original &&
+          original.listId === currentCard.listId &&
+          original.position === currentCard.position)
+      ) {
+        return;
+      }
+
+      patchCards(
+        {
+          cardId: activeId,
+          listId: currentCard.listId,
+          position: currentCard.position,
+        },
+        cards,
+        snapshot,
+        original && original.listId !== currentCard.listId
+          ? "Failed to move card"
+          : "Failed to save card order",
+      );
+      return;
+    }
+
+    const siblings = visibleSiblings(target.targetListId, activeId);
+    const insertIndex = getInsertIndex(
+      target.overId,
+      activeId,
+      target.isOverAColumn,
+      siblings,
+      active.rect.current.translated?.top ?? null,
+      over?.rect.top ?? null,
+      over?.rect.height ?? null,
+      lastOverCardId.current,
+      lastInsertIndex.current,
     );
+    resetDropRefs();
+    preDragCards.current = null;
+    if (insertIndex == null) return;
+
+    const placed = placeCard(
+      cards,
+      activeId,
+      target.targetListId,
+      siblings,
+      insertIndex,
+    );
+    if (!placed) return;
+
+    if (
+      original &&
+      original.listId === target.targetListId &&
+      original.position === placed.position
+    ) {
+      return;
+    }
 
     const didMoveLists = Boolean(
-      activeDragCard && activeDragCard.listId !== targetListId,
+      original && original.listId !== target.targetListId,
     );
 
     patchCards(
       {
         cardId: activeId,
-        listId: targetListId,
-        position,
+        listId: target.targetListId,
+        position: placed.position,
       },
-      nextCards,
+      placed.nextCards,
       snapshot,
       didMoveLists ? "Failed to move card" : "Failed to save card order",
     );
@@ -261,7 +447,7 @@ export default function KanbanDndProvider({
     <DndContext
       id="kanban-dnd-context"
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={collisionDetection}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
