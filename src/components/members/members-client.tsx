@@ -173,15 +173,20 @@ export default function MembersClient({
   };
 
   return (
-    <div className="flex w-full flex-col gap-6 font-sans">
-      <div className="flex flex-col gap-1">
-        <p className="text-xs font-semibold uppercase tracking-wider text-primary">Workspace</p>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Members</h1>
-        <p className="text-sm text-gray-500">Manage collaborators and roles for this workspace</p>
+    <div className="flex h-full min-h-0 flex-1 flex-col gap-6 overflow-y-auto font-sans md:overflow-hidden">
+      <div className="flex shrink-0 items-end justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <p className="text-xs font-semibold uppercase tracking-wider text-primary">Workspace</p>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">Members</h1>
+          <p className="text-sm text-gray-500">Manage collaborators and roles for this workspace</p>
+        </div>
+        <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">
+          {members.length} {members.length === 1 ? "member" : "members"}
+        </span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-        <div className={isAdmin ? "md:col-span-2" : "md:col-span-3"}>
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 md:grid-cols-3">
+        <div className={`min-h-0 ${isAdmin ? "md:col-span-2" : "md:col-span-3"}`}>
           <MembersList
             members={members}
             isAdmin={isAdmin}
@@ -192,7 +197,7 @@ export default function MembersClient({
         </div>
 
         {isAdmin && (
-          <div className="flex flex-col gap-6">
+          <div className="flex min-h-0 flex-col gap-6 md:overflow-y-auto">
             <InviteForm orgId={orgId} onInviteSuccess={fetchInvites} />
             <PendingInvites
               invites={invites}

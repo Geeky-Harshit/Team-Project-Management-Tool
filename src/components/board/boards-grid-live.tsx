@@ -108,7 +108,7 @@ export async function BoardsGridLive({
         </div>
       </div>
 
-      <section className="mt-8">
+      <section>
         <div className="mb-4">
           <h2 className="text-lg font-semibold text-gray-900">All Boards</h2>
           <p className="text-xs text-gray-500">{boards.length} boards available</p>

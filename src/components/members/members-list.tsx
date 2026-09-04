@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { MemberWithUser, Role } from "@/types";
 import { MemberRow } from "./member-row";
 import { ScrollFade } from "../scroll-fade";
@@ -45,21 +45,11 @@ export function MembersList({
   });
 
   return (
-    <Card className="border-gray-200 shadow-sm font-sans">
-      <CardHeader className="pb-3 border-b border-gray-100">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-base font-semibold">Active Members</CardTitle>
-            <CardDescription>Collaborators in this organization</CardDescription>
-          </div>
-          <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">
-            {members.length} {members.length === 1 ? "member" : "members"}
-          </span>
-        </div>
-      </CardHeader>
-      <CardContent className="p-0 divide-y divide-gray-100">
+    <Card className="h-full min-h-0 border-gray-200 py-0 shadow-sm font-sans">
+      <CardContent className="flex h-full min-h-0 flex-1 flex-col p-0">
         <ScrollFade
-          maxHeight="max-h-[calc(100vh-17rem)]"
+          className="h-full min-h-0 flex-1"
+          maxHeight="h-full"
           contentClassName="space-y-1 px-4 py-3"
           fadeColor="from-white via-white/80 to-transparent"
         >

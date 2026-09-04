@@ -66,7 +66,7 @@ async function OrgLayoutInner({
     >
       <div className="flex flex-col md:flex-row h-[calc(100vh-4rem)] bg-gray-50 overflow-hidden relative">
         <Sidebar orgName={org.name} orgSlug={orgSlug} />
-        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto p-2">
           {children}
         </main>
       </div>

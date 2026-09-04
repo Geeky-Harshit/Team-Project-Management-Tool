@@ -60,7 +60,7 @@ export default function Sidebar({ orgName, orgSlug }: SidebarProps) {
     <aside className="flex w-full shrink-0 flex-col justify-between border-b border-gray-200 bg-white md:w-64 md:border-b-0 md:border-r">
       <div className="flex w-full flex-1 flex-row items-center justify-between gap-4 p-4 md:flex-col md:items-stretch md:justify-start md:gap-6">
         <DropdownMenu>
-          <DropdownMenuTrigger className="w-full shrink-0 rounded-lg border border-gray-100 bg-gray-50 px-2 py-1.5 text-left outline-none hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-primary/40">
+          <DropdownMenuTrigger className="shrink-0 rounded-lg border border-gray-100 bg-gray-50 px-2 py-1.5 text-left outline-none hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-primary/40">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-linear-to-br from-amber-500 to-orange-500 text-lg font-bold text-white shadow-xs">
                 {name[0].toUpperCase()}

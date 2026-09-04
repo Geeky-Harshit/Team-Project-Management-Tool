@@ -47,7 +47,7 @@ export function BoardClient({
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
       />
-      <div className="mt-3 min-h-0 flex-1 flex flex-col rounded-xl border border-gray-200 bg-white p-4 shadow-xs overflow-hidden">
+      <div className="mt-3 min-h-0 flex-1 flex flex-col rounded-xl border border-gray-200 bg-white p-1.5 shadow-xs overflow-hidden">
         <KanbanBoard
           initialLists={lists}
           initialCards={cards}

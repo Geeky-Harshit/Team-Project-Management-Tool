@@ -5,7 +5,7 @@ import { WorkloadFallback } from "@/components/fallbacks/dashboard/workload-fall
 
 export default function OrgDashboardLoading() {
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col gap-6 overflow-hidden font-sans">
+    <div className="flex h-full min-h-0 flex-1 flex-col gap-3 overflow-hidden font-sans">
       <div className="flex shrink-0 flex-col gap-1">
         <div className="h-3 w-20 animate-pulse rounded bg-orange-100" />
         <div className="h-8 w-64 animate-pulse rounded-lg bg-gray-200" />

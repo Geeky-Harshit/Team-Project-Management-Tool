@@ -43,7 +43,7 @@ function ListColumn({
       <div
         ref={dndEnabled ? droppable.setNodeRef : undefined}
         className={
-          "w-76 shrink-0 rounded-xl border bg-gray-50 p-3 flex flex-col h-full max-h-full min-h-0 transition " +
+          "w-76 shrink-0 rounded-xl border bg-gray-50 p-1.5 flex flex-col h-full max-h-full min-h-0 transition " +
           (dndEnabled && droppable.isOver
             ? "border-primary/60 ring-2 ring-primary/20"
             : "border-gray-200")

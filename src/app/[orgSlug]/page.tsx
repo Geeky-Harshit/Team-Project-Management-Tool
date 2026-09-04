@@ -38,7 +38,7 @@ async function OrgDashboardPageInner({
   await validateOrgAccess(org.id, "viewer", org);
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col gap-6 overflow-hidden font-sans">
+    <div className="flex h-full min-h-0 flex-1 flex-col gap-3 overflow-hidden font-sans">
       <div className="flex shrink-0 flex-col gap-1">
         <p className="text-xs font-semibold uppercase tracking-wider text-primary">Workspace</p>
         <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
@@ -86,7 +86,7 @@ export default function OrgDashboardPage({
   return (
     <Suspense
       fallback={
-        <div className="flex h-full min-h-0 flex-1 flex-col gap-6 overflow-hidden font-sans">
+        <div className="flex h-full min-h-0 flex-1 flex-col gap-3 overflow-hidden font-sans">
           <div className="flex shrink-0 flex-col gap-1">
             <div className="h-3 w-20 animate-pulse rounded bg-orange-100" />
             <div className="h-8 w-64 animate-pulse rounded-lg bg-gray-200" />
