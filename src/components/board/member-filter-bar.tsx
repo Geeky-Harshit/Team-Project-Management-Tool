@@ -11,6 +11,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useHydrated } from "@/hooks/useHydrated";
 import { useSession } from "@/lib/auth/auth-client";
 import { Search } from "lucide-react";
 
@@ -29,8 +30,11 @@ export default function MemberFilterBar({
   searchQuery = "",
   onSearchChange,
 }: MemberFilterBarProps) {
+  const hydrated = useHydrated();
   const { data: session } = useSession();
-  const currentUserId = session?.user?.id;
+  // Session is client-only; using it during SSR/hydration reorders avatars
+  // (e.g. "AD" on the server vs "GA" after the current user is known).
+  const currentUserId = hydrated ? session?.user?.id : undefined;
 
   // Current user first (only present if they have a task on this board), then everyone else.
   const sortedMembers = useMemo(() => {
@@ -39,7 +43,7 @@ export default function MemberFilterBar({
         if (a.id === currentUserId) return -1;
         if (b.id === currentUserId) return 1;
       }
-      return a.name.localeCompare(b.name);
+      return a.name.localeCompare(b.name, "en");
     });
   }, [members, currentUserId]);
 
